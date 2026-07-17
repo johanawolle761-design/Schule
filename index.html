@@ -84,11 +84,12 @@
   .slot{display:flex; flex-direction:column; align-items:center; min-height:378px}
   /* leichtes Schweben der Kartenbereiche */
   .bobwrap{width:100%; display:flex; justify-content:center; animation:bob 3.4s ease-in-out infinite}
+  #slot-me,#slot-cpu{width:300px; max-width:100%}
   #bob-cpu{animation-delay:.7s}
   @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 
   /* card */
-  .card{width:100%; max-width:300px; border-radius:16px; position:relative; overflow:hidden;
+  .card{width:100%; max-width:300px; min-height:342px; border-radius:16px; position:relative; overflow:hidden;
     background:var(--paper2); border:4px solid var(--ink); box-shadow:6px 6px 0 var(--ink);
     transition:box-shadow .2s ease, transform .2s ease}
   .card::before{content:""; position:absolute; inset:0; pointer-events:none; opacity:.5;
@@ -118,7 +119,7 @@
   @keyframes hitPulse{0%{transform:scale(1.06)}50%{transform:scale(1)}}
   .c-desc{position:relative; z-index:1; padding:8px 15px 15px; font-size:11.5px; line-height:1.5; color:var(--muted); min-height:52px; font-weight:600}
 
-  .card.back{display:grid; place-items:center; min-height:378px; --rc:#8a94a6;
+  .card.back{display:grid; place-items:center; min-height:342px; --rc:#8a94a6;
     background:repeating-linear-gradient(45deg,#efe6c8 0 14px,#e7dcbb 14px 28px)}
   .back-inner{display:flex; flex-direction:column; align-items:center; gap:12px; font-family:var(--comic)}
   .back-glyph{width:80px;height:80px; display:grid;place-items:center; font-size:38px; color:#fff; background:var(--ink);
@@ -217,7 +218,8 @@
     .board{grid-template-columns:1fr; gap:6px}
     .vs{flex-direction:row; gap:14px; margin:2px 0}
     .slot{min-height:auto; margin-bottom:6px}
-    .card,.flip{max-width:340px}
+    .card{max-width:340px}
+    #slot-me,#slot-cpu{width:340px}
     .title-h{font-size:22px}
   }
   @media (prefers-reduced-motion:reduce){
