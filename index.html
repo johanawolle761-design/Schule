@@ -28,12 +28,13 @@
   }
   /* schwebende Comic-Deko im Hintergrund */
   #ambient{position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden}
-  #ambient .float{position:absolute; font-family:var(--comic); opacity:.16; will-change:transform;
-    animation:drift linear infinite; user-select:none}
+  #ambient .blob{position:absolute; border-radius:50%; filter:blur(48px); opacity:.14; will-change:transform;
+    animation:drift ease-in-out infinite}
   @keyframes drift{
-    0%{transform:translateY(20px) rotate(-8deg)}
-    50%{transform:translateY(-24px) rotate(8deg)}
-    100%{transform:translateY(20px) rotate(-8deg)}}
+    0%{transform:translate(0,0) scale(1)}
+    33%{transform:translate(34px,-26px) scale(1.08)}
+    66%{transform:translate(-26px,22px) scale(.94)}
+    100%{transform:translate(0,0) scale(1)}}
   .wrap{position:relative; z-index:1; max-width:1060px; margin:0 auto; padding:20px 18px 60px}
   .comic{font-family:var(--comic); font-weight:400; letter-spacing:.02em}
 
@@ -358,21 +359,21 @@ const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()
 const $=id=>document.getElementById(id);
 const reduced=matchMedia("(prefers-reduced-motion:reduce)").matches;
 
-/* schwebende Deko erzeugen */
+/* weiche, farbige Comic-Schleier im Hintergrund */
 (function ambient(){
   if(reduced) return;
-  const items=["🦠","🔒","⚡","💾","👾","★","01","</>","🛡","💥","🐛","☠"];
   const host=$('ambient');
-  for(let i=0;i<14;i++){
-    const el=document.createElement('div'); el.className='float';
-    el.textContent=items[i%items.length];
-    el.style.left=Math.random()*96+'vw';
-    el.style.top=Math.random()*92+'vh';
-    el.style.fontSize=(22+Math.random()*40)+'px';
-    el.style.animationDuration=(7+Math.random()*8)+'s';
-    el.style.animationDelay=(-Math.random()*8)+'s';
+  const blobs=[
+    ['var(--yellow)',380,6,6],['var(--blue)',320,80,4],['var(--red)',300,74,62],
+    ['var(--yellow)',250,8,72],['var(--blue)',230,46,42],['var(--red)',210,30,90]
+  ];
+  blobs.forEach(([c,s,x,y],i)=>{
+    const el=document.createElement('div'); el.className='blob';
+    el.style.width=el.style.height=s+'px'; el.style.background=c;
+    el.style.left=x+'vw'; el.style.top=y+'vh';
+    el.style.animationDuration=(16+i*3)+'s'; el.style.animationDelay=(-i*2.5)+'s';
     host.appendChild(el);
-  }
+  });
 })();
 
 function cardHTML(c,highlight){
@@ -527,7 +528,10 @@ function play(k){
 
     setTimeout(()=>{
       if(outcome==='tie'){ burst(mc,myTop.rarity); burst(cc,cpuTop.rarity); }
-      else{ flyOff(mc,myTop,winner); flyOff(cc,cpuTop,winner); }
+      else{
+        const back=$('slot-cpu').querySelector('.back'); if(back) back.style.visibility='hidden';
+        flyOff(mc,myTop,winner); flyOff(cc,cpuTop,winner);
+      }
       updateScores(false); busy=false;
       if(me.length===0||cpu.length===0){ setTimeout(end,950); return; }
       $('status').innerHTML='Runde vorbei — <b>Nächste Runde klicken!</b>';
