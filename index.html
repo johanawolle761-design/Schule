@@ -1,0 +1,491 @@
+<title>IT-Security-TCG</title>
+<style>
+  :root{
+    --bg:#080b12; --bg2:#0d111c; --panel:#141a29; --panel2:#1a2133;
+    --line:#252d43; --line2:#323c58;
+    --ink:#d5def1; --muted:#828fb0; --faint:#5b688a;
+    --accent:#2fd4c4; --accent-dim:#1c8f86;
+    --win:#54e08a; --lose:#f4707a;
+    --r-common:#8b97ad; --r-rare:#4a9eff; --r-epic:#b06bff; --r-legend:#ffb454;
+    --mono:ui-monospace,"Cascadia Code","SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    font-family:var(--sans); color:var(--ink);
+    background:
+      radial-gradient(1100px 700px at 50% -10%, #17203a 0%, transparent 60%),
+      linear-gradient(180deg,#0a0e18 0%, #070a11 100%);
+    background-attachment:fixed;
+    min-height:100%;
+    -webkit-font-smoothing:antialiased;
+  }
+  body::before{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background-image:
+      linear-gradient(rgba(120,140,190,.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(120,140,190,.045) 1px, transparent 1px);
+    background-size:44px 44px;
+    mask-image:radial-gradient(80% 80% at 50% 30%, #000 30%, transparent 90%);
+  }
+  .wrap{position:relative; z-index:1; max-width:1080px; margin:0 auto; padding:20px 18px 60px}
+
+  /* ---------- top bar ---------- */
+  .topbar{
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    border:1px solid var(--line); background:linear-gradient(180deg,var(--panel),var(--bg2));
+    border-radius:14px; padding:12px 16px; margin-bottom:16px;
+  }
+  .logo{display:flex; align-items:center; gap:11px; min-width:0}
+  .mark{
+    width:34px;height:34px;border-radius:9px;flex:none;
+    background:linear-gradient(145deg,var(--accent),var(--accent-dim));
+    display:grid;place-items:center;color:#04201d;font-weight:800;font-family:var(--mono);
+    box-shadow:0 0 0 1px rgba(47,212,196,.4), 0 6px 18px -6px rgba(47,212,196,.6);
+  }
+  .title-h{font-family:var(--mono); font-weight:700; letter-spacing:.14em; font-size:14px; text-transform:uppercase}
+  .title-h b{color:var(--accent)}
+  .sub{font-family:var(--mono); font-size:10.5px; color:var(--muted); letter-spacing:.18em; text-transform:uppercase}
+  .scores{margin-left:auto; display:flex; gap:10px; flex-wrap:wrap}
+  .chip{
+    font-family:var(--mono); font-size:11px; letter-spacing:.06em;
+    border:1px solid var(--line2); border-radius:999px; padding:6px 12px;
+    display:flex; gap:8px; align-items:center; background:rgba(20,26,41,.6);
+  }
+  .chip .lbl{color:var(--muted); text-transform:uppercase; font-size:9.5px; letter-spacing:.16em}
+  .chip .num{color:var(--ink); font-weight:700; font-variant-numeric:tabular-nums}
+  .chip.me .num{color:var(--accent)}
+  .chip.pot .num{color:var(--r-legend)}
+
+  /* ---------- board ---------- */
+  .status{
+    text-align:center; font-family:var(--mono); letter-spacing:.05em;
+    min-height:24px; margin:6px 0 14px; font-size:13.5px; color:var(--muted);
+  }
+  .status b{color:var(--ink)}
+  .board{
+    display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:16px;
+  }
+  .vs{
+    font-family:var(--mono); font-weight:800; letter-spacing:.1em; color:var(--faint);
+    display:flex; flex-direction:column; align-items:center; gap:8px; font-size:13px;
+  }
+  .vs .bolt{
+    width:40px;height:40px;border-radius:50%; display:grid;place-items:center;
+    border:1px solid var(--line2); background:var(--panel); color:var(--accent); font-size:18px;
+  }
+  .side-label{
+    font-family:var(--mono); text-transform:uppercase; letter-spacing:.16em; font-size:10px;
+    color:var(--muted); text-align:center; margin-bottom:8px;
+  }
+  .side-label.me{color:var(--accent)}
+  .slot{display:flex; flex-direction:column; align-items:center}
+
+  /* ---------- card ---------- */
+  .card{
+    width:100%; max-width:300px; border-radius:16px; position:relative;
+    border:1px solid var(--rc,#333); background:linear-gradient(180deg,var(--panel2),var(--panel));
+    box-shadow:0 18px 40px -22px #000, inset 0 0 0 1px rgba(255,255,255,.02),
+      0 0 0 1px color-mix(in srgb, var(--rc) 22%, transparent);
+    overflow:hidden; transition:transform .25s ease, box-shadow .25s ease;
+  }
+  .card::before{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:radial-gradient(120% 60% at 50% -10%, color-mix(in srgb,var(--rc) 20%, transparent), transparent 60%);
+  }
+  .card.win{box-shadow:0 0 0 2px var(--win), 0 20px 44px -18px color-mix(in srgb,var(--win) 55%, #000)}
+  .card.lose{opacity:.72}
+  .c-head{display:flex; align-items:flex-start; justify-content:space-between; gap:8px; padding:14px 15px 8px}
+  .c-name{font-weight:800; font-size:17px; line-height:1.15; letter-spacing:.01em; text-wrap:balance}
+  .c-type{font-family:var(--mono); font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-top:5px}
+  .pips{display:flex; gap:3px; flex:none; margin-top:3px}
+  .pip{width:9px;height:9px;border-radius:2px; background:var(--rc); box-shadow:0 0 8px -1px var(--rc)}
+  .pip.off{background:transparent; border:1px solid var(--line2); box-shadow:none}
+  .rar{font-family:var(--mono); font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:var(--rc); text-align:right; padding:0 15px 2px}
+  .stats{padding:8px 15px 4px; display:flex; flex-direction:column; gap:7px}
+  .stat{display:grid; grid-template-columns:96px 34px 1fr; align-items:center; gap:9px}
+  .stat .sl{font-family:var(--mono); font-size:11px; color:var(--muted); letter-spacing:.03em}
+  .stat .sv{font-family:var(--mono); font-size:13px; font-weight:700; text-align:right; font-variant-numeric:tabular-nums}
+  .stat .track{height:7px; border-radius:4px; background:#0c1120; overflow:hidden; border:1px solid var(--line)}
+  .stat .fill{height:100%; border-radius:4px; background:linear-gradient(90deg, color-mix(in srgb,var(--rc) 55%, #000), var(--rc)); width:0; transition:width .5s ease}
+  .stat.hit{background:color-mix(in srgb,var(--rc) 12%, transparent); border-radius:7px; margin:0 -6px; padding:2px 6px}
+  .stat.hit .sl,.stat.hit .sv{color:#fff}
+  .stat.hit .sv{text-shadow:0 0 12px var(--rc)}
+  .c-desc{padding:8px 15px 15px; font-size:11.5px; line-height:1.5; color:var(--muted); min-height:54px}
+
+  /* card back */
+  .card.back{display:grid; place-items:center; min-height:340px; background:
+     repeating-linear-gradient(135deg, #10152340 0 10px, #0c111d40 10px 20px), linear-gradient(180deg,var(--panel2),var(--panel));
+     --rc:#37415f}
+  .back-inner{display:flex; flex-direction:column; align-items:center; gap:12px; color:var(--muted); font-family:var(--mono)}
+  .back-glyph{width:64px;height:64px;border-radius:14px; border:1px solid var(--line2); display:grid; place-items:center; font-size:30px; color:var(--faint)}
+  .back-txt{font-size:10px; letter-spacing:.28em; text-transform:uppercase}
+
+  /* flip */
+  .flip{perspective:1200px; width:100%; max-width:300px}
+  .flip-in{position:relative; transform-style:preserve-3d; transition:transform .55s cubic-bezier(.4,.1,.2,1)}
+  .flip.revealed .flip-in{transform:rotateY(180deg)}
+  .flip .face{backface-visibility:hidden; -webkit-backface-visibility:hidden}
+  .flip .front{position:absolute; inset:0; transform:rotateY(180deg)}
+  .flip.revealed .front{position:relative}
+  .flip.revealed .back{position:absolute; inset:0}
+
+  /* ---------- controls ---------- */
+  .controls{margin-top:22px; display:flex; flex-direction:column; align-items:center; gap:12px}
+  .cats{display:flex; gap:10px; flex-wrap:wrap; justify-content:center}
+  .cat{
+    font-family:var(--mono); font-size:12px; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--ink); background:linear-gradient(180deg,var(--panel2),var(--panel));
+    border:1px solid var(--line2); border-radius:11px; padding:11px 16px; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; gap:3px; min-width:104px;
+    transition:transform .12s ease, border-color .12s ease, box-shadow .12s ease;
+  }
+  .cat .cv{font-size:16px; font-weight:800; color:var(--accent)}
+  .cat:hover{transform:translateY(-2px); border-color:var(--accent); box-shadow:0 0 0 1px var(--accent-dim), 0 10px 24px -14px var(--accent)}
+  .cat:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+  .cat:disabled{opacity:.4; cursor:not-allowed; transform:none; box-shadow:none; border-color:var(--line)}
+  .hint{font-family:var(--mono); font-size:11px; color:var(--muted); letter-spacing:.05em}
+
+  .btn{
+    font-family:var(--mono); font-size:12.5px; letter-spacing:.1em; text-transform:uppercase; cursor:pointer;
+    border-radius:11px; padding:12px 26px; border:1px solid var(--accent-dim);
+    background:linear-gradient(180deg,var(--accent),var(--accent-dim)); color:#04201d; font-weight:800;
+    transition:transform .12s ease, box-shadow .12s ease;
+    box-shadow:0 10px 26px -12px var(--accent);
+  }
+  .btn:hover{transform:translateY(-2px)}
+  .btn:focus-visible{outline:2px solid #fff; outline-offset:2px}
+  .btn.ghost{background:transparent; color:var(--ink); border-color:var(--line2); box-shadow:none; font-weight:600}
+  .btn.ghost:hover{border-color:var(--accent); color:var(--accent)}
+
+  .result{
+    font-family:var(--mono); text-align:center; font-size:15px; letter-spacing:.04em; min-height:22px; font-weight:700;
+  }
+  .result.win{color:var(--win)} .result.lose{color:var(--lose)} .result.tie{color:var(--r-legend)}
+
+  /* ---------- log ---------- */
+  details.log{margin-top:26px; border:1px solid var(--line); border-radius:12px; background:var(--bg2); overflow:hidden}
+  details.log summary{font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); padding:11px 16px; cursor:pointer; list-style:none}
+  details.log summary::-webkit-details-marker{display:none}
+  .feed{max-height:200px; overflow-y:auto; padding:0 16px 12px; font-family:var(--mono); font-size:11.5px; line-height:1.9}
+  .feed .ln{color:var(--muted); border-top:1px dashed var(--line); padding-top:6px; margin-top:6px}
+  .feed .ln:first-child{border-top:0}
+  .feed .ln .w{color:var(--win)} .feed .ln .l{color:var(--lose)} .feed .ln .t{color:var(--r-legend)}
+
+  /* ---------- overlays ---------- */
+  .overlay{position:fixed; inset:0; z-index:20; display:grid; place-items:center; padding:22px;
+    background:rgba(5,7,12,.82); backdrop-filter:blur(6px)}
+  .modal{
+    width:min(560px,100%); border:1px solid var(--line2); border-radius:18px; padding:30px 28px;
+    background:linear-gradient(180deg,var(--panel),var(--bg2)); box-shadow:0 40px 90px -30px #000;
+  }
+  .modal h1{font-family:var(--mono); letter-spacing:.1em; text-transform:uppercase; font-size:20px; margin:0 0 4px}
+  .modal h1 b{color:var(--accent)}
+  .modal .tag{font-family:var(--mono); font-size:10.5px; letter-spacing:.22em; text-transform:uppercase; color:var(--muted); margin-bottom:18px}
+  .modal p{font-size:13.5px; line-height:1.65; color:var(--muted)}
+  .rules{list-style:none; padding:0; margin:16px 0 22px; display:flex; flex-direction:column; gap:9px}
+  .rules li{display:flex; gap:11px; font-size:13px; line-height:1.5; align-items:flex-start}
+  .rules .n{font-family:var(--mono); color:var(--accent); font-weight:800; flex:none}
+  .modal .actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:6px}
+  .big-result{font-family:var(--mono); font-size:13px; letter-spacing:.2em; text-transform:uppercase; margin-bottom:8px}
+
+  /* ---------- gallery ---------- */
+  .gal-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px; margin-top:6px; max-height:70vh; overflow-y:auto; padding:4px}
+  .gal-modal{width:min(1000px,100%)}
+
+  @media (max-width:720px){
+    .board{grid-template-columns:1fr; gap:10px}
+    .vs{flex-direction:row; gap:14px; margin:2px 0}
+    .vs .bolt{width:34px;height:34px;font-size:15px}
+    .slot{order:0}
+    .card{max-width:340px}
+    .flip{max-width:340px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none !important; animation:none !important}
+    .flip-in{transition:none !important}
+  }
+  :root{color-scheme:dark}
+</style>
+
+<div class="wrap">
+  <div class="topbar">
+    <div class="logo">
+      <div class="mark">//</div>
+      <div>
+        <div class="title-h"><b>IT-Security</b>-TCG</div>
+        <div class="sub">Threat Quartett · Top-Trumps</div>
+      </div>
+    </div>
+    <div class="scores">
+      <div class="chip me"><span class="lbl">Du</span><span class="num" id="s-me">0</span></div>
+      <div class="chip"><span class="lbl">CPU</span><span class="num" id="s-cpu">0</span></div>
+      <div class="chip pot"><span class="lbl">Pott</span><span class="num" id="s-pot">0</span></div>
+      <div class="chip"><span class="lbl">Runde</span><span class="num" id="s-round">0</span></div>
+    </div>
+  </div>
+
+  <div class="status" id="status">Bereitmachen…</div>
+
+  <div class="board">
+    <div class="slot">
+      <div class="side-label me">Deine Karte</div>
+      <div id="slot-me"></div>
+    </div>
+    <div class="vs"><div class="bolt">⚡</div><span>VS</span></div>
+    <div class="slot">
+      <div class="side-label">Gegner</div>
+      <div class="flip" id="slot-cpu"></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="result" id="result"></div>
+    <div class="cats" id="cats"></div>
+    <div class="hint" id="hint"></div>
+    <button class="btn" id="next" style="display:none">Nächste Runde ▸</button>
+  </div>
+
+  <details class="log">
+    <summary>Kampf-Protokoll</summary>
+    <div class="feed" id="feed"></div>
+  </details>
+
+  <div style="text-align:center;margin-top:22px">
+    <button class="btn ghost" id="open-gal">Alle Karten ansehen</button>
+    <button class="btn ghost" id="restart">Neues Spiel</button>
+  </div>
+</div>
+
+<!-- intro -->
+<div class="overlay" id="intro">
+  <div class="modal">
+    <h1><b>IT-Security</b>-TCG</h1>
+    <div class="tag">Das Sammelkartenspiel rund um IT-Angriffe</div>
+    <p>20 reale Angriffsvektoren — von Virus bis Zero-Day — treten im Quartett gegeneinander an. Erobere alle Karten.</p>
+    <ul class="rules">
+      <li><span class="n">1</span><span>Das Deck wird gemischt und je zur Hälfte an dich und den Computer verteilt.</span></li>
+      <li><span class="n">2</span><span>Wer am Zug ist, wählt einen der vier Werte: <b>Schaden, Verbreitung, Tarnung, Komplexität</b>.</span></li>
+      <li><span class="n">3</span><span>Der höhere Wert gewinnt und nimmt beide Karten. Gleichstand → Pott, der beim nächsten Sieg dazukommt.</span></li>
+      <li><span class="n">4</span><span>Wer am Ende alle Karten hält, gewinnt.</span></li>
+    </ul>
+    <div class="actions">
+      <button class="btn" id="start">▸ Spiel starten</button>
+      <button class="btn ghost" id="intro-gal">Karten ansehen</button>
+    </div>
+  </div>
+</div>
+
+<!-- gameover -->
+<div class="overlay" id="gameover" style="display:none">
+  <div class="modal" style="text-align:center">
+    <div class="big-result" id="go-tag"></div>
+    <h1 id="go-title"></h1>
+    <p id="go-sub"></p>
+    <div class="actions" style="justify-content:center;margin-top:18px">
+      <button class="btn" id="go-again">▸ Nochmal spielen</button>
+    </div>
+  </div>
+</div>
+
+<!-- gallery -->
+<div class="overlay" id="gallery" style="display:none">
+  <div class="modal gal-modal">
+    <h1><b>Karten</b>sammlung</h1>
+    <div class="tag" id="gal-count"></div>
+    <div class="gal-grid" id="gal-grid"></div>
+    <div class="actions" style="margin-top:18px"><button class="btn ghost" id="gal-close">Schließen</button></div>
+  </div>
+</div>
+
+<script>
+const RAR = {
+  legendaer:{label:"Legendär", stars:4, color:"var(--r-legend)"},
+  episch:   {label:"Episch",    stars:3, color:"var(--r-epic)"},
+  selten:   {label:"Selten",    stars:2, color:"var(--r-rare)"},
+  haeufig:  {label:"Häufig",    stars:1, color:"var(--r-common)"},
+};
+const CATS = [["schaden","Schaden"],["verbreitung","Verbreitung"],["tarnung","Tarnung"],["komplexitaet","Komplexität"]];
+
+const DECK = [
+  ["Zero-Day-Exploit","Exploit","legendaer",95,60,95,98,"Nutzt eine unbekannte Sicherheitslücke aus, für die es noch keinen Patch gibt. Keine Abwehr existiert."],
+  ["Ransomware","Malware","legendaer",98,80,55,70,"Verschlüsselt die Daten des Opfers und fordert Lösegeld. Kann Unternehmen und Kliniken lahmlegen."],
+  ["Advanced Persistent Threat","Kampagne","legendaer",90,45,97,95,"Langfristiger, gezielter Angriff (oft staatlich), der sich unbemerkt einnistet und Daten abzieht."],
+  ["Rootkit","Malware","episch",80,40,96,88,"Nistet sich tief im Betriebssystem ein, verschafft Admin-Rechte und versteckt sich vor Scannern."],
+  ["DDoS-Angriff","Netzwerk","episch",75,90,30,50,"Überflutet einen Server mit Anfragen (oft per Botnetz), bis er zusammenbricht und offline geht."],
+  ["Botnetz","Netzwerk","episch",70,95,65,72,"Ein Netz gekaperter 'Zombie'-Rechner, ferngesteuert für DDoS, Spam oder Krypto-Mining."],
+  ["SQL-Injection","Web","episch",78,50,60,65,"Schleust über unsichere Eingabefelder Datenbank-Befehle ein und liest Passwörter aus."],
+  ["Wurm","Malware","episch",72,98,45,60,"Verbreitet sich selbstständig über Netzwerke, ohne dass eine Datei ausgeführt werden muss."],
+  ["Trojaner","Malware","selten",68,55,80,50,"Tarnt sich als nützliches Programm, öffnet im Hintergrund aber eine Hintertür für Angreifer."],
+  ["Man-in-the-Middle","Netzwerk","selten",65,40,85,70,"Klinkt sich unbemerkt in die Kommunikation ein und liest oder manipuliert den Datenverkehr."],
+  ["Phishing","Social Engineering","selten",55,88,50,25,"Gefälschte E-Mails oder Webseiten locken Opfer dazu, Passwörter oder Bankdaten preiszugeben."],
+  ["Spyware","Malware","selten",58,60,82,45,"Spioniert heimlich das Nutzerverhalten aus und sendet Daten wie Zugangsdaten an Dritte."],
+  ["Keylogger","Malware","selten",60,45,88,48,"Zeichnet jede Tastatureingabe auf und fängt so Passwörter, PINs und Nachrichten ab."],
+  ["Cross-Site-Scripting","Web","selten",52,58,62,55,"Schleust Schadcode in Webseiten ein, der im Browser anderer Besucher ausgeführt wird."],
+  ["Cryptojacking","Malware","selten",45,65,78,50,"Missbraucht heimlich die Rechenleistung des Opfers zum Schürfen von Kryptowährung."],
+  ["Virus","Malware","haeufig",50,70,40,35,"Hängt sich an Dateien an und verbreitet sich beim Öffnen. Der Klassiker der Schadprogramme."],
+  ["Adware","Malware","haeufig",25,72,35,20,"Blendet ungewollt Werbung ein und sammelt nebenbei Daten. Meist mehr lästig als gefährlich."],
+  ["Brute-Force-Angriff","Zugang","haeufig",48,35,25,30,"Probiert automatisiert unzählige Passwörter durch, bis das richtige gefunden ist."],
+  ["Social Engineering","Social Engineering","haeufig",55,50,68,30,"Manipuliert Menschen statt Technik — etwa durch Vortäuschen einer Identität am Telefon."],
+  ["Backdoor","Malware","haeufig",62,30,75,52,"Eine versteckte Hintertür, die Zugang zu einem System auch ohne Passwort ermöglicht."],
+].map(([name,typ,rarity,schaden,verbreitung,tarnung,komplexitaet,beschreibung])=>(
+  {name,typ,rarity,schaden,verbreitung,tarnung,komplexitaet,beschreibung}
+));
+
+const val=(c,k)=>c[k];
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+
+// ---- rendering ----
+function cardHTML(c, highlight){
+  const r=RAR[c.rarity];
+  const pips=[0,1,2,3].map(i=>`<span class="pip ${i<r.stars?'':'off'}"></span>`).join('');
+  const stats=CATS.map(([k,label])=>{
+    const v=val(c,k);
+    return `<div class="stat ${highlight===k?'hit':''}">
+      <span class="sl">${label}</span><span class="sv">${v}</span>
+      <span class="track"><span class="fill" style="width:${v}%"></span></span></div>`;
+  }).join('');
+  return `<div class="card" style="--rc:${r.color}">
+    <div class="c-head"><div><div class="c-name">${c.name}</div><div class="c-type">${c.typ}</div></div>
+      <div class="pips">${pips}</div></div>
+    <div class="rar">${r.label}</div>
+    <div class="stats">${stats}</div>
+    <div class="c-desc">${c.beschreibung}</div></div>`;
+}
+const backHTML=`<div class="card back"><div class="back-inner">
+  <div class="back-glyph">🛡</div><div class="back-txt">// verschlüsselt //</div></div></div>`;
+
+// ---- state ----
+let me,cpu,pot,chooser,round,busy;
+const $=id=>document.getElementById(id);
+
+function start(){
+  const d=shuffle(DECK.slice());
+  me=d.slice(0,10); cpu=d.slice(10);
+  pot=[]; chooser='me'; round=0; busy=false;
+  $('feed').innerHTML=''; $('result').textContent=''; $('result').className='result';
+  $('gameover').style.display='none'; $('intro').style.display='none';
+  updateScores(); nextTurn();
+}
+function updateScores(){
+  $('s-me').textContent=me.length; $('s-cpu').textContent=cpu.length;
+  $('s-pot').textContent=pot.length; $('s-round').textContent=round;
+}
+function setCats(enabled, top){
+  $('cats').innerHTML=CATS.map(([k,label])=>
+    `<button class="cat" data-k="${k}" ${enabled?'':'disabled'}>
+       <span>${label}</span><span class="cv">${enabled?val(top,k):'–'}</span></button>`).join('');
+  if(enabled){
+    $('cats').querySelectorAll('.cat').forEach(b=>b.onclick=()=>play(b.dataset.k));
+  }
+}
+
+function nextTurn(){
+  if(me.length===0||cpu.length===0) return end();
+  round++; updateScores();
+  $('next').style.display='none';
+  $('result').textContent=''; $('result').className='result';
+  const myTop=me[0], cpuTop=cpu[0];
+  $('slot-me').innerHTML=cardHTML(myTop);
+  const flip=$('slot-cpu'); flip.className='flip';
+  flip.innerHTML=`<div class="flip-in">
+    <div class="face back">${backHTML}</div>
+    <div class="face front">${cardHTML(cpuTop)}</div></div>`;
+
+  if(chooser==='me'){
+    $('status').innerHTML='Du bist am Zug — <b>wähle einen Wert</b>.';
+    $('hint').textContent='Höherer Wert gewinnt beide Karten.';
+    setCats(true, myTop);
+  }else{
+    $('status').innerHTML='Der <b>Computer</b> ist am Zug…';
+    $('hint').textContent='';
+    setCats(false, myTop);
+    const k=CATS.map(c=>c[0]).reduce((a,b)=>val(cpuTop,b)>val(cpuTop,a)?b:a);
+    setTimeout(()=>{
+      const nm=CATS.find(c=>c[0]===k)[1];
+      $('status').innerHTML=`Der Computer wählt <b>${nm}</b>.`;
+      setTimeout(()=>play(k), 650);
+    }, 700);
+  }
+}
+
+function play(k){
+  if(busy) return; busy=true;
+  setCats(false, me[0]);
+  const myTop=me.shift(), cpuTop=cpu.shift();
+  const label=CATS.find(c=>c[0]===k)[1];
+  const mv=val(myTop,k), cv=val(cpuTop,k);
+
+  // reveal
+  $('slot-me').innerHTML=cardHTML(myTop,k);
+  $('slot-cpu').classList.add('revealed');
+  $('slot-cpu').querySelector('.front').innerHTML=cardHTML(cpuTop,k);
+
+  const stake=[myTop,cpuTop,...pot]; pot=[];
+  let outcome,winner;
+  if(mv>cv){winner='me'; me.push(...stake); chooser='me'; outcome='win';}
+  else if(cv>mv){winner='cpu'; cpu.push(...stake); chooser='cpu'; outcome='lose';}
+  else{winner='tie'; pot=stake; outcome='tie';}
+
+  setTimeout(()=>{
+    const mc=$('slot-me').querySelector('.card');
+    const cc=$('slot-cpu').querySelector('.front .card');
+    if(outcome==='win'){mc.classList.add('win'); cc.classList.add('lose');}
+    else if(outcome==='lose'){cc.classList.add('win'); mc.classList.add('lose');}
+    const res=$('result');
+    if(outcome==='win'){res.textContent=`✔ ${label}: ${mv} vs ${cv} — du gewinnst!`; res.className='result win';}
+    else if(outcome==='lose'){res.textContent=`✘ ${label}: ${mv} vs ${cv} — Computer gewinnt.`; res.className='result lose';}
+    else{res.textContent=`= ${label}: ${mv} vs ${cv} — Gleichstand! Karten in den Pott.`; res.className='result tie';}
+    logRound(label,myTop,cpuTop,mv,cv,outcome,stake.length);
+    updateScores();
+    busy=false;
+    if(me.length===0||cpu.length===0){ setTimeout(end,600); return; }
+    $('next').style.display='';
+  }, 620);
+}
+
+function logRound(label,my,cp,mv,cv,outcome,n){
+  const cls=outcome==='win'?'w':outcome==='lose'?'l':'t';
+  const verb=outcome==='win'?'Du +'+n:outcome==='lose'?'CPU +'+n:'Pott';
+  const div=document.createElement('div');
+  div.className='ln';
+  div.innerHTML=`R${round} · ${label} · ${my.name} <b>${mv}</b> vs ${cp.name} <b>${cv}</b> · <span class="${cls}">${verb}</span>`;
+  $('feed').prepend(div);
+}
+
+$('next').onclick=()=>{ if(!busy) nextTurn(); };
+
+function end(){
+  const won=cpu.length===0 && me.length>0;
+  const lost=me.length===0 && cpu.length>0;
+  let title,sub,tag;
+  if(won){tag='Mission erfolgreich'; title='🏆 Du hast gewonnen!'; sub='Du hast alle 20 Karten erobert. Sauber gespielt.';}
+  else if(lost){tag='Mission gescheitert'; title='💀 Computer gewinnt'; sub='Der Computer hält alle Karten. Nächstes Mal!';}
+  else {
+    if(me.length>cpu.length){tag='Nach Punkten'; title='🏆 Du führst!'; sub=`Du hältst ${me.length} von 20 Karten.`;}
+    else if(cpu.length>me.length){tag='Nach Punkten'; title='💀 Computer führt'; sub=`Der Computer hält ${cpu.length} von 20 Karten.`;}
+    else {tag='Unentschieden'; title='🤝 Patt'; sub='Gleichstand — niemand hat die Oberhand.';}
+  }
+  $('go-tag').textContent=tag; $('go-title').textContent=title; $('go-sub').textContent=sub;
+  $('go-tag').style.color=won?'var(--win)':lost?'var(--lose)':'var(--r-legend)';
+  $('gameover').style.display='grid';
+}
+
+// gallery
+function buildGallery(){
+  const order=['legendaer','episch','selten','haeufig'];
+  const sorted=DECK.slice().sort((a,b)=>order.indexOf(a.rarity)-order.indexOf(b.rarity));
+  $('gal-grid').innerHTML=sorted.map(c=>cardHTML(c)).join('');
+  $('gal-count').textContent=DECK.length+' Karten · 4 Seltenheitsstufen';
+}
+function openGal(){ buildGallery(); $('gallery').style.display='grid'; }
+
+$('start').onclick=start;
+$('restart').onclick=start;
+$('go-again').onclick=start;
+$('open-gal').onclick=openGal;
+$('intro-gal').onclick=openGal;
+$('gal-close').onclick=()=>$('gallery').style.display='none';
+$('gallery').onclick=e=>{ if(e.target.id==='gallery') $('gallery').style.display='none'; };
+</script>
