@@ -248,7 +248,7 @@
   <div class="board">
     <div class="slot"><div class="side-label me">Deine Karte</div><div class="bobwrap" id="bob-me"><div id="slot-me"></div></div></div>
     <div class="vs"><div class="bolt comic">VS</div><span class="lbl">DUELL</span></div>
-    <div class="slot"><div class="side-label">Gegner</div><div class="bobwrap" id="bob-cpu"><div class="flip" id="slot-cpu"></div></div></div>
+    <div class="slot"><div class="side-label">Gegner</div><div class="bobwrap" id="bob-cpu"><div id="slot-cpu"></div></div></div>
   </div>
 
   <div class="controls">
@@ -486,9 +486,8 @@ function nextTurn(){
   $('next').style.display='none'; $('result').textContent=''; $('result').className='result';
   const myTop=me[0], cpuTop=cpu[0];
   $('slot-me').innerHTML=cardHTML(myTop); dealIn($('slot-me').firstElementChild,1,0);
-  const flip=$('slot-cpu'); flip.className='flip';
-  flip.innerHTML=`<div class="flip-in"><div class="face back">${backHTML}</div><div class="face front">${cardHTML(cpuTop)}</div></div>`;
-  dealIn(flip,-1,150);
+  $('slot-cpu').innerHTML=backHTML;
+  dealIn($('slot-cpu').firstElementChild,-1,150);
 
   if(chooser==='me'){
     $('status').innerHTML='Du bist am Zug — <b>wähle einen Wert!</b>';
@@ -499,6 +498,22 @@ function nextTurn(){
     setTimeout(()=>{ $('status').innerHTML=`Der Computer wählt <b>${CATFULL[k]}!</b>`; setTimeout(()=>play(k),750); },900);
   }
 }
+/* 2D-Umdreh-Reveal ohne 3D/Rueckseite - laeuft ueberall sauber */
+function revealCpu(card,k,cb){
+  const host=$('slot-cpu');
+  const el=host.firstElementChild;
+  if(reduced || !el){ host.innerHTML=cardHTML(card,k); cb(); return; }
+  el.style.transformOrigin='center';
+  el.animate([{transform:'scaleX(1)'},{transform:'scaleX(.04)'}],{duration:190,easing:'ease-in'})
+    .onfinish=()=>{
+      host.innerHTML=cardHTML(card,k);
+      const el2=host.firstElementChild;
+      el2.style.transformOrigin='center';
+      el2.animate([{transform:'scaleX(.04)'},{transform:'scaleX(1)'}],{duration:210,easing:'ease-out'})
+        .onfinish=cb;
+    };
+}
+
 function play(k){
   if(busy) return; busy=true; setCats(false,me[0]);
   const myTop=me.shift(), cpuTop=cpu.shift();
@@ -506,8 +521,6 @@ function play(k){
   const bolt=document.querySelector('.bolt'); bolt.classList.add('spin'); setTimeout(()=>bolt.classList.remove('spin'),560);
 
   $('slot-me').innerHTML=cardHTML(myTop,k);
-  $('slot-cpu').classList.add('revealed');
-  $('slot-cpu').querySelector('.front').innerHTML=cardHTML(cpuTop,k);
 
   const stake=[myTop,cpuTop,...pot]; pot=[];
   let outcome,winner;
@@ -515,9 +528,9 @@ function play(k){
   else if(cv>mv){winner='cpu'; cpu.push(...stake); chooser='cpu'; outcome='lose';}
   else{winner='tie'; pot=stake; outcome='tie';}
 
-  setTimeout(()=>{
+  revealCpu(cpuTop,k,()=>{
     const mc=$('slot-me').querySelector('.card');
-    const cc=$('slot-cpu').querySelector('.front .card');
+    const cc=$('slot-cpu').querySelector('.card');
     if(outcome==='win'){mc.classList.add('win'); cc.classList.add('lose');}
     else if(outcome==='lose'){cc.classList.add('win'); mc.classList.add('lose');}
     const res=$('result');
@@ -527,17 +540,15 @@ function play(k){
     logRound(label,myTop,cpuTop,mv,cv,outcome,stake.length);
 
     setTimeout(()=>{
-      if(outcome==='tie'){ burst(mc,myTop.rarity); burst(cc,cpuTop.rarity); }
-      else{
-        const back=$('slot-cpu').querySelector('.back'); if(back) back.style.visibility='hidden';
-        flyOff(mc,myTop,winner); flyOff(cc,cpuTop,winner);
-      }
+      const mc2=$('slot-me').querySelector('.card'), cc2=$('slot-cpu').querySelector('.card');
+      if(outcome==='tie'){ burst(mc2,myTop.rarity); burst(cc2,cpuTop.rarity); }
+      else{ flyOff(mc2,myTop,winner); flyOff(cc2,cpuTop,winner); }
       updateScores(false); busy=false;
       if(me.length===0||cpu.length===0){ setTimeout(end,950); return; }
       $('status').innerHTML='Runde vorbei — <b>Nächste Runde klicken!</b>';
       $('next').style.display=''; $('next').classList.add('pulse');
     }, 950);
-  }, reduced?150:700);
+  });
 }
 function logRound(label,my,cp,mv,cv,outcome,n){
   const cls=outcome==='win'?'w':outcome==='lose'?'l':'t';
