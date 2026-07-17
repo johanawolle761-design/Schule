@@ -1,0 +1,590 @@
+<title>Break Point — IT-Security Kartenspiel</title>
+<style>
+  :root{
+    --paper:#f6eccf; --paper2:#fbf5e2; --ink:#161210;
+    --red:#ec2f2f; --red-d:#c21f1f; --blue:#2e7fe4; --yellow:#ffcf33; --cyan:#25c1cf;
+    --muted:#6a5f4d;
+    --r-common:#8a94a6; --r-rare:#2e7fe4; --r-epic:#a24be0; --r-legend:#ffab12;
+    --comic:Impact,Haettenschweiler,"Franklin Gothic Bold","Arial Narrow Bold","Arial Black",sans-serif;
+    --body:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --sh:4px 4px 0 var(--ink);
+    color-scheme:light;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    font-family:var(--body); color:var(--ink); font-weight:600; min-height:100%;
+    -webkit-font-smoothing:antialiased; overflow-x:hidden;
+    background:
+      radial-gradient(circle at 20% 12%, rgba(46,127,228,.10), transparent 30%),
+      radial-gradient(circle at 82% 8%, rgba(236,47,47,.10), transparent 32%),
+      var(--paper);
+  }
+  body::before{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background-image:radial-gradient(rgba(22,18,16,.14) 1.5px, transparent 1.7px);
+    background-size:15px 15px; opacity:.5;
+    mask-image:radial-gradient(90% 85% at 50% 30%,#000 40%,transparent 92%);
+  }
+  /* schwebende Comic-Deko im Hintergrund */
+  #ambient{position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden}
+  #ambient .blob{position:absolute; border-radius:50%; filter:blur(48px); opacity:.14; will-change:transform;
+    animation:drift ease-in-out infinite}
+  @keyframes drift{
+    0%{transform:translate(0,0) scale(1)}
+    33%{transform:translate(34px,-26px) scale(1.08)}
+    66%{transform:translate(-26px,22px) scale(.94)}
+    100%{transform:translate(0,0) scale(1)}}
+  .wrap{position:relative; z-index:1; max-width:1060px; margin:0 auto; padding:20px 18px 60px}
+  .comic{font-family:var(--comic); font-weight:400; letter-spacing:.02em}
+
+  /* top bar */
+  .topbar{display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    border:4px solid var(--ink); background:var(--yellow); border-radius:16px; padding:11px 16px; margin-bottom:18px; box-shadow:var(--sh)}
+  .logo{display:flex; align-items:center; gap:12px}
+  .mark{width:40px;height:40px;border-radius:10px;flex:none; border:3px solid var(--ink);
+    background:var(--red); color:#fff; display:grid;place-items:center; font-family:var(--comic); font-size:20px;
+    box-shadow:2px 2px 0 var(--ink); transform:rotate(-6deg); animation:markWobble 3.5s ease-in-out infinite}
+  @keyframes markWobble{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg) scale(1.06)}}
+  .title-h{font-family:var(--comic); font-size:26px; line-height:1; text-transform:uppercase; letter-spacing:.02em; -webkit-text-stroke:1px var(--ink)}
+  .title-h b{color:var(--red)}
+  .title-h .tw{display:inline-block; animation:hdrBob 2.8s ease-in-out infinite}
+  .title-h .tw:last-child{animation-delay:.5s}
+  @keyframes hdrBob{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-3px) rotate(1.5deg)}}
+  .sub{font-family:var(--comic); font-size:12px; color:var(--ink); letter-spacing:.16em; text-transform:uppercase; opacity:.7}
+  .scores{margin-left:auto; display:flex; gap:9px; flex-wrap:wrap}
+  .chip{border:3px solid var(--ink); border-radius:999px; padding:5px 13px; background:#fff;
+    display:flex; gap:8px; align-items:center; box-shadow:2px 2px 0 var(--ink)}
+  .chip .lbl{font-family:var(--comic); text-transform:uppercase; font-size:12px; letter-spacing:.06em; color:var(--muted)}
+  .chip .num{font-family:var(--comic); font-size:19px; line-height:1; font-variant-numeric:tabular-nums; transition:transform .25s ease; min-width:14px; text-align:center}
+  .chip .num.bump{transform:scale(1.7) rotate(-6deg); color:var(--red)}
+  .chip.me{background:#dff0ff} .chip.me .num{color:var(--blue)}
+  .chip.pot{background:#fff2cf} .chip.pot .num{color:var(--red-d)}
+
+  .status-wrap{display:flex; justify-content:center; margin:6px 0 18px}
+  .status{position:relative; background:#fff; border:3px solid var(--ink); border-radius:16px;
+    padding:9px 20px; font-family:var(--comic); font-size:17px; letter-spacing:.02em; text-align:center; box-shadow:var(--sh); max-width:90%}
+  .status::after{content:""; position:absolute; left:34px; bottom:-14px; width:20px; height:20px; background:#fff;
+    border-right:3px solid var(--ink); border-bottom:3px solid var(--ink); transform:rotate(45deg)}
+  .status b{color:var(--red)}
+
+  .board{display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:14px}
+  .vs{display:flex; flex-direction:column; align-items:center; gap:6px}
+  .vs .bolt{width:56px;height:56px; display:grid;place-items:center; font-family:var(--comic); font-size:15px; color:#fff;
+    background:var(--red); animation:boltIdle 2.4s ease-in-out infinite;
+    clip-path:polygon(50% 0,63% 22%,90% 15%,78% 40%,100% 50%,78% 60%,90% 85%,63% 78%,50% 100%,37% 78%,10% 85%,22% 60%,0 50%,22% 40%,10% 15%,37% 22%);
+    text-shadow:1px 1px 0 var(--ink)}
+  @keyframes boltIdle{0%,100%{transform:rotate(-5deg) scale(1)}50%{transform:rotate(5deg) scale(1.08)}}
+  .vs .bolt.spin{animation:boltSpin .55s cubic-bezier(.3,1.4,.4,1)}
+  @keyframes boltSpin{50%{transform:rotate(160deg) scale(1.35)}100%{transform:rotate(360deg)}}
+  .vs .lbl{font-family:var(--comic); font-size:15px; letter-spacing:.1em; color:var(--muted)}
+  .side-label{display:inline-block; font-family:var(--comic); text-transform:uppercase; letter-spacing:.06em; font-size:14px;
+    background:var(--ink); color:#fff; padding:3px 12px; border-radius:8px; margin-bottom:10px; transform:rotate(-1.5deg)}
+  .side-label.me{background:var(--blue)}
+  .slot{display:flex; flex-direction:column; align-items:center; min-height:378px}
+  /* leichtes Schweben der Kartenbereiche */
+  .bobwrap{width:100%; display:flex; justify-content:center; animation:bob 3.4s ease-in-out infinite}
+  #slot-me,#slot-cpu{width:300px; max-width:100%}
+  #bob-cpu{animation-delay:.7s}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+  /* card */
+  .card{width:100%; max-width:300px; min-height:342px; border-radius:16px; position:relative; overflow:hidden;
+    background:var(--paper2); border:4px solid var(--ink); box-shadow:6px 6px 0 var(--ink);
+    transition:box-shadow .2s ease, transform .2s ease}
+  .card::before{content:""; position:absolute; inset:0; pointer-events:none; opacity:.5;
+    background-image:radial-gradient(color-mix(in srgb,var(--rc) 60%,transparent) 1.6px, transparent 1.8px);
+    background-size:11px 11px; mask-image:radial-gradient(120% 90% at 100% 0,#000,transparent 55%)}
+  .card.win{box-shadow:8px 8px 0 var(--ink), 0 0 0 5px var(--yellow); transform:translate(-2px,-4px) rotate(-1deg)}
+  .card.lose{filter:grayscale(.5); opacity:.7; transform:rotate(1.5deg)}
+  .card.r-legendaer{border-color:var(--r-legend)}
+  .topband{height:0}
+  .c-head{display:flex; align-items:flex-start; justify-content:space-between; gap:8px; padding:13px 15px 4px; position:relative; z-index:1}
+  .c-name{font-family:var(--comic); font-weight:400; font-size:24px; line-height:.98; text-transform:uppercase; letter-spacing:.01em; text-wrap:balance; -webkit-text-stroke:.6px var(--ink)}
+  .c-type{font-family:var(--comic); font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:#fff; background:var(--ink); display:inline-block; padding:2px 8px; border-radius:6px; margin-top:6px}
+  .badge{flex:none; width:52px; height:52px; display:grid; place-items:center; color:var(--ink);
+    background:var(--rc); border:2px solid var(--ink); transform:rotate(8deg);
+    clip-path:polygon(50% 0,63% 22%,90% 15%,78% 40%,100% 50%,78% 60%,90% 85%,63% 78%,50% 100%,37% 78%,10% 85%,22% 60%,0 50%,22% 40%,10% 15%,37% 22%)}
+  .badge span{font-family:var(--comic); font-size:11px; line-height:.9; text-align:center; letter-spacing:-1px; text-shadow:0 1px 0 rgba(255,255,255,.5)}
+  .rar{position:relative; z-index:1; font-family:var(--comic); font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--rc); text-align:left; padding:2px 15px 4px; -webkit-text-stroke:.4px var(--ink)}
+  .stats{position:relative; z-index:1; padding:6px 15px 4px; display:flex; flex-direction:column; gap:7px}
+  .stat{display:grid; grid-template-columns:92px 30px 1fr; align-items:center; gap:8px; border-radius:8px; padding:2px 6px; margin:0 -6px}
+  .stat .sl{font-family:var(--comic); font-size:13px; letter-spacing:.03em; color:var(--muted); text-transform:uppercase}
+  .stat .sv{font-family:var(--comic); font-size:17px; text-align:right; font-variant-numeric:tabular-nums; transition:transform .25s ease}
+  .stat .track{height:11px; border-radius:6px; background:#fff; overflow:hidden; border:2px solid var(--ink)}
+  .stat .fill{height:100%; background:var(--rc); width:0; transition:width .6s cubic-bezier(.2,.85,.3,1.1)}
+  .stat.hit{background:var(--rc); animation:hitPulse .5s ease}
+  .stat.hit .sl,.stat.hit .sv{color:#fff; -webkit-text-stroke:.5px var(--ink)}
+  .stat.hit .sv{transform:scale(1.4)}
+  @keyframes hitPulse{0%{transform:scale(1.06)}50%{transform:scale(1)}}
+  .c-desc{position:relative; z-index:1; padding:8px 15px 15px; font-size:11.5px; line-height:1.5; color:var(--muted); min-height:52px; font-weight:600}
+
+  .card.back{display:grid; place-items:center; min-height:342px; --rc:#8a94a6;
+    background:repeating-linear-gradient(45deg,#efe6c8 0 14px,#e7dcbb 14px 28px)}
+  .back-inner{display:flex; flex-direction:column; align-items:center; gap:12px; font-family:var(--comic)}
+  .back-glyph{width:80px;height:80px; display:grid;place-items:center; font-size:38px; color:#fff; background:var(--ink);
+    animation:backSpin 5s ease-in-out infinite;
+    clip-path:polygon(50% 0,63% 22%,90% 15%,78% 40%,100% 50%,78% 60%,90% 85%,63% 78%,50% 100%,37% 78%,10% 85%,22% 60%,0 50%,22% 40%,10% 15%,37% 22%)}
+  @keyframes backSpin{0%,100%{transform:rotate(0)}50%{transform:rotate(20deg) scale(1.05)}}
+  .back-txt{font-size:15px; letter-spacing:.16em; text-transform:uppercase; background:var(--red); color:#fff; padding:3px 12px; border:2px solid var(--ink); transform:rotate(-3deg)}
+
+  .flip{perspective:1300px; width:100%; max-width:300px}
+  .flip-in{position:relative; transform-style:preserve-3d; transition:transform .55s cubic-bezier(.45,0,.15,1)}
+  .flip.revealed .flip-in{transform:rotateY(180deg)}
+  .flip .face{backface-visibility:hidden; -webkit-backface-visibility:hidden}
+  .flip .front{position:absolute; inset:0; transform:rotateY(180deg)}
+  .flip.revealed .front{position:relative}
+  .flip.revealed .back{position:absolute; inset:0}
+
+  .controls{margin-top:22px; display:flex; flex-direction:column; align-items:center; gap:14px}
+  .result{font-family:var(--comic); text-align:center; font-size:20px; letter-spacing:.02em; min-height:26px; text-transform:uppercase; -webkit-text-stroke:.5px var(--ink)}
+  .result.win{color:var(--blue)} .result.lose{color:var(--red)} .result.tie{color:var(--r-legend)}
+  .result.show{animation:popIn .45s cubic-bezier(.2,1.7,.4,1)}
+  @keyframes popIn{from{opacity:0; transform:scale(.5) rotate(-6deg)}to{opacity:1; transform:none}}
+  .cats{display:flex; gap:11px; flex-wrap:wrap; justify-content:center}
+  .cat{font-family:var(--comic); font-size:15px; letter-spacing:.03em; text-transform:uppercase; color:var(--ink);
+    background:#fff; border:3px solid var(--ink); border-radius:12px; padding:9px 15px; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; gap:2px; min-width:108px; box-shadow:var(--sh);
+    transition:transform .12s ease, box-shadow .12s ease, background .12s ease}
+  .cat .cv{font-size:22px; color:var(--red); -webkit-text-stroke:.5px var(--ink)}
+  .cat:hover:not(:disabled){transform:translate(-2px,-2px); box-shadow:6px 6px 0 var(--ink); background:var(--yellow)}
+  .cat:active:not(:disabled){transform:translate(2px,2px); box-shadow:1px 1px 0 var(--ink)}
+  .cat:focus-visible{outline:3px solid var(--blue); outline-offset:2px}
+  .cat:disabled{opacity:.45; cursor:default; box-shadow:2px 2px 0 var(--ink)}
+  .hint{font-family:var(--comic); font-size:14px; color:var(--muted); letter-spacing:.03em; min-height:18px; text-transform:uppercase}
+
+  .btn{font-family:var(--comic); font-size:19px; letter-spacing:.04em; text-transform:uppercase; cursor:pointer;
+    border-radius:14px; padding:12px 30px; border:3px solid var(--ink); background:var(--red); color:#fff;
+    box-shadow:var(--sh); transition:transform .12s ease, box-shadow .12s ease; text-shadow:1.5px 1.5px 0 var(--red-d)}
+  .btn:hover{transform:translate(-2px,-2px); box-shadow:6px 6px 0 var(--ink)}
+  .btn:active{transform:translate(2px,2px); box-shadow:1px 1px 0 var(--ink)}
+  .btn:focus-visible{outline:3px solid var(--blue); outline-offset:3px}
+  .btn.big{font-size:23px; padding:14px 40px}
+  .btn.pulse{animation:btnPulse 1.3s ease-in-out infinite}
+  @keyframes btnPulse{0%,100%{transform:rotate(-1deg) scale(1)}50%{transform:rotate(1deg) scale(1.05)}}
+  .btn.ghost{background:#fff; color:var(--ink); text-shadow:none}
+  .btn.ghost:hover{background:var(--yellow)}
+  .btn.blue{background:var(--blue); text-shadow:1.5px 1.5px 0 #1a5cb0}
+
+  details.log{margin-top:26px; border:3px solid var(--ink); border-radius:14px; background:#fff; overflow:hidden; box-shadow:var(--sh)}
+  details.log summary{font-family:var(--comic); font-size:15px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink); padding:11px 16px; cursor:pointer; list-style:none; background:var(--yellow)}
+  details.log summary::-webkit-details-marker{display:none}
+  .feed{max-height:210px; overflow-y:auto; padding:8px 16px 12px; font-family:var(--body); font-weight:600; font-size:12px; line-height:1.85}
+  .feed .ln{color:var(--muted); border-top:2px dotted #ddd2b0; padding-top:6px; margin-top:6px}
+  .feed .ln:first-child{border-top:0}
+  .feed .ln b{color:var(--ink); font-family:var(--comic); font-weight:400; font-size:14px}
+  .feed .ln .w{color:var(--blue)} .feed .ln .l{color:var(--red)} .feed .ln .t{color:var(--r-legend)}
+
+  .footer{text-align:center; margin-top:24px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap}
+
+  .overlay{position:fixed; inset:0; z-index:40; display:grid; place-items:center; padding:22px; background:rgba(22,18,16,.5); backdrop-filter:blur(3px); animation:fade .25s ease}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .modal{width:min(560px,100%); border:4px solid var(--ink); border-radius:20px; padding:28px; background:var(--paper2); box-shadow:10px 10px 0 var(--ink); animation:rise .4s cubic-bezier(.2,1.3,.35,1)}
+  @keyframes rise{from{opacity:0; transform:translateY(26px) scale(.95) rotate(-1deg)}to{opacity:1; transform:none}}
+  .modal h1{font-family:var(--comic); letter-spacing:.02em; text-transform:uppercase; font-size:34px; line-height:.95; margin:0 0 4px; -webkit-text-stroke:1px var(--ink)}
+  .modal h1 b{color:var(--red)}
+  .modal .tag{font-family:var(--comic); font-size:14px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-bottom:18px}
+  .modal p{font-size:14px; line-height:1.6; color:var(--ink); font-weight:600}
+  .rules{list-style:none; padding:0; margin:14px 0 6px; display:flex; flex-direction:column; gap:10px}
+  .rules li{display:flex; gap:12px; font-size:13.5px; line-height:1.45; align-items:flex-start; font-weight:600}
+  .rules .n{font-family:var(--comic); font-size:20px; color:#fff; background:var(--red); width:28px; height:28px; border:2px solid var(--ink); border-radius:8px; display:grid; place-items:center; flex:none}
+  .modal .actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:6px}
+  details.rulebox{margin-top:14px; border:3px solid var(--ink); border-radius:12px; overflow:hidden; text-align:left}
+  details.rulebox summary{font-family:var(--comic); font-size:15px; text-transform:uppercase; letter-spacing:.06em; padding:9px 14px; cursor:pointer; list-style:none; background:var(--yellow)}
+  details.rulebox summary::-webkit-details-marker{display:none}
+  details.rulebox .inner{padding:6px 16px 14px}
+  .big-result{font-family:var(--comic); font-size:16px; letter-spacing:.16em; text-transform:uppercase; margin-bottom:6px}
+  .gal-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:18px; margin-top:6px; max-height:70vh; overflow-y:auto; padding:8px}
+  .gal-modal{width:min(1000px,100%)}
+
+  /* MENU (Landing) */
+  #menu .modal{width:min(640px,100%); text-align:center; position:relative; overflow:hidden}
+  .menu-burst{position:absolute; width:230px; height:230px; top:-70px; right:-70px; background:var(--yellow); opacity:.5;
+    clip-path:polygon(50% 0,60% 30%,92% 18%,74% 44%,100% 56%,72% 62%,88% 92%,56% 72%,50% 100%,44% 74%,14% 92%,30% 62%,0 56%,28% 44%,10% 18%,40% 30%);
+    animation:menuBurst 8s linear infinite}
+  @keyframes menuBurst{to{transform:rotate(360deg)}}
+  .menu-title{position:relative; z-index:1; display:flex; gap:.14em; justify-content:center; flex-wrap:wrap; margin:6px 0 2px}
+  .menu-title .w{font-family:var(--comic); font-weight:400; font-size:clamp(46px,13vw,90px); line-height:.9; text-transform:uppercase;
+    color:#fff; -webkit-text-stroke:2.5px var(--ink); text-shadow:6px 6px 0 var(--ink); display:inline-block}
+  .menu-title .w1{color:var(--yellow); animation:titleFloatA 3s ease-in-out infinite}
+  .menu-title .w2{color:var(--red); animation:titleFloatB 3s ease-in-out infinite .5s}
+  @keyframes titleFloatA{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-12px) rotate(2deg)}}
+  @keyframes titleFloatB{0%,100%{transform:translateY(-4px) rotate(3deg)}50%{transform:translateY(10px) rotate(-2deg)}}
+  .menu-sub{position:relative; z-index:1; font-family:var(--comic); font-size:15px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin:8px 0 22px}
+  .menu-actions{position:relative; z-index:1; display:flex; flex-direction:column; gap:12px; align-items:center}
+  .menu-actions .btn{width:min(320px,100%)}
+
+  @media (max-width:720px){
+    .board{grid-template-columns:1fr; gap:6px}
+    .vs{flex-direction:row; gap:14px; margin:2px 0}
+    .slot{min-height:auto; margin-bottom:6px}
+    .card{max-width:340px}
+    #slot-me,#slot-cpu{width:340px}
+    .title-h{font-size:22px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation-duration:.001s !important; animation-iteration-count:1 !important}
+    .flip-in{transition:none !important}
+    #ambient{display:none}
+  }
+</style>
+
+<div id="ambient"></div>
+
+<div class="wrap">
+  <div class="topbar">
+    <div class="logo">
+      <div class="mark">BP</div>
+      <div><div class="title-h"><span class="tw"><b>Break</b></span> <span class="tw">Point</span></div><div class="sub">IT-Security Kartenduell</div></div>
+    </div>
+    <div class="scores">
+      <div class="chip me"><span class="lbl">Du</span><span class="num" id="s-me">0</span></div>
+      <div class="chip"><span class="lbl">CPU</span><span class="num" id="s-cpu">0</span></div>
+      <div class="chip pot"><span class="lbl">Pott</span><span class="num" id="s-pot">0</span></div>
+      <div class="chip"><span class="lbl">Runde</span><span class="num" id="s-round">0</span></div>
+    </div>
+  </div>
+
+  <div class="status-wrap"><div class="status" id="status">Bereitmachen…</div></div>
+
+  <div class="board">
+    <div class="slot"><div class="side-label me">Deine Karte</div><div class="bobwrap" id="bob-me"><div id="slot-me"></div></div></div>
+    <div class="vs"><div class="bolt comic">VS</div><span class="lbl">DUELL</span></div>
+    <div class="slot"><div class="side-label">Gegner</div><div class="bobwrap" id="bob-cpu"><div id="slot-cpu"></div></div></div>
+  </div>
+
+  <div class="controls">
+    <div class="result" id="result"></div>
+    <div class="cats" id="cats"></div>
+    <div class="hint" id="hint"></div>
+    <button class="btn big" id="next" style="display:none">Nächste Runde ▸</button>
+  </div>
+
+  <details class="log"><summary>Kampf-Protokoll</summary><div class="feed" id="feed"></div></details>
+
+  <div class="footer">
+    <button class="btn ghost" id="open-gal">Karten-Info</button>
+    <button class="btn ghost" id="restart">Neues Spiel</button>
+    <button class="btn ghost" id="to-menu">☰ Menü</button>
+  </div>
+</div>
+
+<!-- MENU -->
+<div class="overlay" id="menu">
+  <div class="modal">
+    <div class="menu-burst"></div>
+    <div class="menu-title"><span class="w w1">Break</span><span class="w w2">Point</span></div>
+    <div class="menu-sub">IT-Security Kartenspiel</div>
+    <div class="menu-actions">
+      <button class="btn big" id="m-new">▸ Neues Spiel</button>
+      <button class="btn big blue" id="m-cards">🃏 Karten-Info</button>
+      <details class="rulebox">
+        <summary>Spielregeln</summary>
+        <div class="inner">
+          <ul class="rules">
+            <li><span class="n">1</span><span>Das Deck wird gemischt und je zur Hälfte an dich und den Computer verteilt.</span></li>
+            <li><span class="n">2</span><span>Wer am Zug ist, wählt einen von vier Werten: <b>Schaden, Verbreitung, Tarnung, Komplexität</b>.</span></li>
+            <li><span class="n">3</span><span>Der höhere Wert gewinnt beide Karten. Gleichstand → Pott, der beim nächsten Sieg dazukommt.</span></li>
+            <li><span class="n">4</span><span>Nach jeder Runde klickst du auf <b>Nächste Runde</b>. Wer alle Karten hält, gewinnt!</span></li>
+          </ul>
+        </div>
+      </details>
+    </div>
+  </div>
+</div>
+
+<!-- gameover -->
+<div class="overlay" id="gameover" style="display:none">
+  <div class="modal" style="text-align:center">
+    <div class="big-result" id="go-tag"></div><h1 id="go-title"></h1><p id="go-sub"></p>
+    <div class="actions" style="justify-content:center;margin-top:18px">
+      <button class="btn big" id="go-again">▸ Nochmal!</button>
+      <button class="btn ghost" id="go-menu">☰ Menü</button>
+    </div>
+  </div>
+</div>
+
+<!-- gallery -->
+<div class="overlay" id="gallery" style="display:none">
+  <div class="modal gal-modal">
+    <h1><b>Karten</b>-Info</h1><div class="tag" id="gal-count"></div>
+    <div class="gal-grid" id="gal-grid"></div>
+    <div class="actions" style="margin-top:18px"><button class="btn ghost" id="gal-close">Schließen</button></div>
+  </div>
+</div>
+
+<div id="fx"></div><div id="flash"></div><div id="lines"></div>
+<style>
+  #fx{position:fixed; inset:0; pointer-events:none; z-index:60; overflow:hidden}
+  .cstar{position:fixed; will-change:transform,opacity; clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)}
+  .boomwrap{position:fixed; will-change:transform,opacity; display:grid; place-items:center}
+  .boomwrap .layer{grid-area:1/1}
+  .boomword{grid-area:1/1; font-family:var(--comic); color:#fff; text-transform:uppercase; -webkit-text-stroke:2px var(--ink); text-shadow:3px 3px 0 var(--ink); z-index:2; line-height:.9; text-align:center}
+  #flash{position:fixed; inset:0; z-index:55; pointer-events:none; opacity:0; background:radial-gradient(circle at var(--fx,50%) var(--fy,50%), rgba(255,220,120,.9), transparent 60%)}
+  #lines{position:fixed; inset:0; z-index:54; pointer-events:none; opacity:0; background:repeating-conic-gradient(from 0deg at var(--fx,50%) var(--fy,50%), rgba(22,18,16,.16) 0deg 3deg, transparent 3deg 9deg)}
+</style>
+
+<script>
+const RAR={
+  legendaer:{label:"Legendär",stars:4,color:"var(--r-legend)",tier:4,word:"K.O.!!",cols:["#ffd36b","#ffab12","#fff2c4","#ff8a1f"]},
+  episch:{label:"Episch",stars:3,color:"var(--r-epic)",tier:3,word:"BAM!",cols:["#c78bff","#a24be0","#e2c6ff","#7a1fd6"]},
+  selten:{label:"Selten",stars:2,color:"var(--r-rare)",tier:2,word:"ZAP!",cols:["#7db4ff","#2e7fe4","#b9d7ff"]},
+  haeufig:{label:"Häufig",stars:1,color:"var(--r-common)",tier:1,word:"POP!",cols:["#b3bccb","#8a94a6","#d3dae4"]},
+};
+const CATFULL={schaden:"Schaden",verbreitung:"Verbreitung",tarnung:"Tarnung",komplexitaet:"Komplexität"};
+
+const DECK=[
+  ["Zero-Day-Exploit","Exploit","legendaer",95,60,95,98,"Nutzt eine unbekannte Sicherheitslücke aus, für die es noch keinen Patch gibt. Keine Abwehr existiert."],
+  ["Ransomware","Malware","legendaer",98,80,55,70,"Verschlüsselt die Daten des Opfers und fordert Lösegeld. Kann Unternehmen und Kliniken lahmlegen."],
+  ["Advanced Persistent Threat","Kampagne","legendaer",90,45,97,95,"Langfristiger, gezielter Angriff (oft staatlich), der sich unbemerkt einnistet und Daten abzieht."],
+  ["Rootkit","Malware","episch",80,40,96,88,"Nistet sich tief im Betriebssystem ein, verschafft Admin-Rechte und versteckt sich vor Scannern."],
+  ["DDoS-Angriff","Netzwerk","episch",75,90,30,50,"Überflutet einen Server mit Anfragen (oft per Botnetz), bis er zusammenbricht und offline geht."],
+  ["Botnetz","Netzwerk","episch",70,95,65,72,"Ein Netz gekaperter 'Zombie'-Rechner, ferngesteuert für DDoS, Spam oder Krypto-Mining."],
+  ["SQL-Injection","Web","episch",78,50,60,65,"Schleust über unsichere Eingabefelder Datenbank-Befehle ein und liest Passwörter aus."],
+  ["Wurm","Malware","episch",72,98,45,60,"Verbreitet sich selbstständig über Netzwerke, ohne dass eine Datei ausgeführt werden muss."],
+  ["Trojaner","Malware","selten",68,55,80,50,"Tarnt sich als nützliches Programm, öffnet im Hintergrund aber eine Hintertür für Angreifer."],
+  ["Man-in-the-Middle","Netzwerk","selten",65,40,85,70,"Klinkt sich unbemerkt in die Kommunikation ein und liest oder manipuliert den Datenverkehr."],
+  ["Phishing","Social Engineering","selten",55,88,50,25,"Gefälschte E-Mails oder Webseiten locken Opfer dazu, Passwörter oder Bankdaten preiszugeben."],
+  ["Spyware","Malware","selten",58,60,82,45,"Spioniert heimlich das Nutzerverhalten aus und sendet Daten wie Zugangsdaten an Dritte."],
+  ["Keylogger","Malware","selten",60,45,88,48,"Zeichnet jede Tastatureingabe auf und fängt so Passwörter, PINs und Nachrichten ab."],
+  ["Cross-Site-Scripting","Web","selten",52,58,62,55,"Schleust Schadcode in Webseiten ein, der im Browser anderer Besucher ausgeführt wird."],
+  ["Cryptojacking","Malware","selten",45,65,78,50,"Missbraucht heimlich die Rechenleistung des Opfers zum Schürfen von Kryptowährung."],
+  ["Virus","Malware","haeufig",50,70,40,35,"Hängt sich an Dateien an und verbreitet sich beim Öffnen. Der Klassiker der Schadprogramme."],
+  ["Adware","Malware","haeufig",25,72,35,20,"Blendet ungewollt Werbung ein und sammelt nebenbei Daten. Meist mehr lästig als gefährlich."],
+  ["Brute-Force-Angriff","Zugang","haeufig",48,35,25,30,"Probiert automatisiert unzählige Passwörter durch, bis das richtige gefunden ist."],
+  ["Social Engineering","Social Engineering","haeufig",55,50,68,30,"Manipuliert Menschen statt Technik — etwa durch Vortäuschen einer Identität am Telefon."],
+  ["Backdoor","Malware","haeufig",62,30,75,52,"Eine versteckte Hintertür, die Zugang zu einem System auch ohne Passwort ermöglicht."],
+].map(([name,typ,rarity,schaden,verbreitung,tarnung,komplexitaet,beschreibung])=>({name,typ,rarity,schaden,verbreitung,tarnung,komplexitaet,beschreibung}));
+
+const val=(c,k)=>c[k];
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const $=id=>document.getElementById(id);
+const reduced=matchMedia("(prefers-reduced-motion:reduce)").matches;
+
+/* weiche, farbige Comic-Schleier im Hintergrund */
+(function ambient(){
+  if(reduced) return;
+  const host=$('ambient');
+  const blobs=[
+    ['var(--yellow)',380,6,6],['var(--blue)',320,80,4],['var(--red)',300,74,62],
+    ['var(--yellow)',250,8,72],['var(--blue)',230,46,42],['var(--red)',210,30,90]
+  ];
+  blobs.forEach(([c,s,x,y],i)=>{
+    const el=document.createElement('div'); el.className='blob';
+    el.style.width=el.style.height=s+'px'; el.style.background=c;
+    el.style.left=x+'vw'; el.style.top=y+'vh';
+    el.style.animationDuration=(16+i*3)+'s'; el.style.animationDelay=(-i*2.5)+'s';
+    host.appendChild(el);
+  });
+})();
+
+function cardHTML(c,highlight){
+  const r=RAR[c.rarity];
+  const stats=[["schaden","Schaden"],["verbreitung","Verbreit."],["tarnung","Tarnung"],["komplexitaet","Komplex."]].map(([k,label])=>{
+    const v=val(c,k);
+    return `<div class="stat ${highlight===k?'hit':''}"><span class="sl">${label}</span><span class="sv">${v}</span>
+      <span class="track"><span class="fill" style="width:${v}%"></span></span></div>`;
+  }).join('');
+  return `<div class="card r-${c.rarity}" style="--rc:${r.color}">
+    <div class="c-head"><div><div class="c-name">${c.name}</div><span class="c-type">${c.typ}</span></div>
+      <div class="badge"><span>${'★'.repeat(r.stars)}</span></div></div>
+    <div class="rar">${r.label}</div><div class="stats">${stats}</div><div class="c-desc">${c.beschreibung}</div></div>`;
+}
+const backHTML=`<div class="card back"><div class="back-inner"><div class="back-glyph">?</div><div class="back-txt">Top Secret</div></div></div>`;
+
+/* comic burst */
+function jaggedPoly(spikes,rIn,rOut){
+  let pts=[]; const n=spikes*2;
+  for(let i=0;i<n;i++){const a=(i/n)*Math.PI*2-Math.PI/2; const rad=(i%2? rIn:rOut);
+    pts.push(`${(50+Math.cos(a)*rad).toFixed(1)}% ${(50+Math.sin(a)*rad).toFixed(1)}%`);}
+  return `polygon(${pts.join(',')})`;
+}
+function burst(el, rarity){
+  if(!el || reduced) return;
+  const rect=el.getBoundingClientRect(); const cx=rect.left+rect.width/2, cy=rect.top+rect.height/2;
+  const r=RAR[rarity]; const tier=r.tier; const cols=r.cols; const fx=$('fx');
+  const wrap=document.createElement('div'); wrap.className='boomwrap';
+  const size=[0,86,120,160,210][tier];
+  wrap.style.left=cx+'px'; wrap.style.top=cy+'px'; wrap.style.width=size+'px'; wrap.style.height=size+'px';
+  const outline=document.createElement('div'); outline.className='layer';
+  outline.style.cssText=`width:${size}px;height:${size}px;background:var(--ink);clip-path:${jaggedPoly(11+tier,26,50)}`;
+  const inner=document.createElement('div'); inner.className='layer';
+  inner.style.cssText=`width:${size*0.9}px;height:${size*0.9}px;justify-self:center;align-self:center;background:${cols[0]};clip-path:${jaggedPoly(11+tier,26,50)}`;
+  const word=document.createElement('div'); word.className='boomword';
+  word.style.fontSize=[0,20,26,32,40][tier]+'px'; word.textContent=r.word;
+  wrap.appendChild(outline); wrap.appendChild(inner); wrap.appendChild(word); fx.appendChild(wrap);
+  wrap.animate([
+    {transform:'translate(-50%,-50%) scale(.2) rotate(-14deg)',opacity:0,offset:0},
+    {transform:`translate(-50%,-50%) scale(1.12) rotate(${tier>=3?'6deg':'-3deg'})`,opacity:1,offset:.32},
+    {transform:'translate(-50%,-50%) scale(1) rotate(0)',opacity:1,offset:.7},
+    {transform:'translate(-50%,-50%) scale(1.25) rotate(4deg)',opacity:0,offset:1}
+  ],{duration:600+tier*130,easing:'cubic-bezier(.2,1.2,.35,1)'}).onfinish=()=>wrap.remove();
+
+  const counts=[0,10,16,24,36][tier];
+  for(let i=0;i<counts;i++){
+    const s=document.createElement('div'); s.className='cstar';
+    const sz=8+Math.random()*[0,10,13,16,20][tier]; const col=cols[i%cols.length];
+    s.style.cssText=`left:${cx}px;top:${cy}px;width:${sz}px;height:${sz}px;background:${col};filter:drop-shadow(1px 1px 0 var(--ink))`;
+    fx.appendChild(s);
+    const ang=Math.random()*Math.PI*2, dist=[0,110,170,240,330][tier]*(0.4+Math.random()*0.7);
+    const dx=Math.cos(ang)*dist, dy=Math.sin(ang)*dist;
+    s.animate([
+      {transform:'translate(-50%,-50%) scale(1) rotate(0)',opacity:1},
+      {transform:`translate(calc(-50% + ${dx}px),calc(-50% + ${dy+dist*0.35}px)) scale(.2) rotate(${(Math.random()*2-1)*540}deg)`,opacity:0}
+    ],{duration:700+Math.random()*(360+tier*150),easing:'cubic-bezier(.2,.7,.3,1)'}).onfinish=()=>s.remove();
+  }
+  if(tier===4){
+    const flash=$('flash'), lines=$('lines');
+    [flash,lines].forEach(l=>{l.style.setProperty('--fx',cx+'px'); l.style.setProperty('--fy',cy+'px');});
+    flash.animate([{opacity:0},{opacity:.8},{opacity:0}],{duration:520,easing:'ease-out'});
+    lines.animate([{opacity:0},{opacity:.9,offset:.2},{opacity:0}],{duration:600,easing:'ease-out'});
+    document.querySelector('.wrap').animate(
+      [{transform:'translate(0,0)'},{transform:'translate(-6px,4px)'},{transform:'translate(6px,-3px)'},
+       {transform:'translate(-4px,-4px)'},{transform:'translate(0,0)'}],{duration:400,easing:'ease-out'});
+  }
+}
+function flyOff(el, card, toWinner){
+  if(!el) return; const dir=toWinner==='me'?1:-1;
+  burst(el, card.rarity);
+  el.animate([
+    {transform:'translate(0,0) scale(1) rotate(0)',opacity:1,offset:0},
+    {transform:`translate(0,${dir*-16}px) scale(1.06) rotate(${dir*-4}deg)`,opacity:1,offset:.2},
+    {transform:`translate(${Math.random()*50-25}px,${dir*280}px) scale(.3) rotate(${dir*26}deg)`,opacity:0,offset:1}
+  ],{duration:reduced?200:840,easing:'cubic-bezier(.4,.05,.3,1)',fill:'forwards'});
+}
+function dealIn(el, dir, delay){
+  if(!el) return;
+  el.animate([
+    {transform:`translateY(${dir*220}px) rotate(${dir*-12}deg) scale(.72)`,opacity:0,offset:0},
+    {transform:`translateY(${dir*-14}px) rotate(${dir*4}deg) scale(1.04)`,opacity:1,offset:.72},
+    {transform:`translateY(${dir*4}px) rotate(${dir*-1.5}deg) scale(.99)`,opacity:1,offset:.88},
+    {transform:'translateY(0) rotate(0) scale(1)',opacity:1,offset:1}
+  ],{duration:reduced?150:620,delay:reduced?0:delay,easing:'cubic-bezier(.25,.9,.3,1)',fill:'backwards'});
+}
+
+/* ---------- game ---------- */
+let me,cpu,pot,chooser,round,busy;
+
+function start(){
+  const d=shuffle(DECK.slice()); me=d.slice(0,10); cpu=d.slice(10);
+  pot=[]; chooser='me'; round=0; busy=false;
+  $('feed').innerHTML=''; $('result').textContent=''; $('result').className='result';
+  $('gameover').style.display='none'; $('menu').style.display='none'; $('gallery').style.display='none';
+  updateScores(true); nextTurn();
+}
+function updateScores(silent){
+  const set=(id,v)=>{const el=$(id); if(!silent && el.textContent!=String(v)){el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); setTimeout(()=>el.classList.remove('bump'),320);} el.textContent=v;};
+  set('s-me',me.length); set('s-cpu',cpu.length); set('s-pot',pot.length); $('s-round').textContent=round;
+}
+function setCats(enabled,top){
+  const CATS=[["schaden","Schaden"],["verbreitung","Verbreitung"],["tarnung","Tarnung"],["komplexitaet","Komplex."]];
+  $('cats').innerHTML=CATS.map(([k,label])=>`<button class="cat" data-k="${k}" ${enabled?'':'disabled'}>
+     <span>${label}</span><span class="cv">${enabled?val(top,k):'–'}</span></button>`).join('');
+  if(enabled) $('cats').querySelectorAll('.cat').forEach(b=>b.onclick=()=>play(b.dataset.k));
+}
+function nextTurn(){
+  if(me.length===0||cpu.length===0) return end();
+  round++; updateScores(true);
+  $('next').style.display='none'; $('result').textContent=''; $('result').className='result';
+  const myTop=me[0], cpuTop=cpu[0];
+  $('slot-me').innerHTML=cardHTML(myTop); dealIn($('slot-me').firstElementChild,1,0);
+  $('slot-cpu').innerHTML=backHTML;
+  dealIn($('slot-cpu').firstElementChild,-1,150);
+
+  if(chooser==='me'){
+    $('status').innerHTML='Du bist am Zug — <b>wähle einen Wert!</b>';
+    $('hint').textContent='Höherer Wert gewinnt beide Karten'; setCats(true,myTop);
+  }else{
+    $('status').innerHTML='Der <b>Computer</b> ist am Zug…'; $('hint').textContent=''; setCats(false,myTop);
+    const k=["schaden","verbreitung","tarnung","komplexitaet"].reduce((a,b)=>val(cpuTop,b)>val(cpuTop,a)?b:a);
+    setTimeout(()=>{ $('status').innerHTML=`Der Computer wählt <b>${CATFULL[k]}!</b>`; setTimeout(()=>play(k),750); },900);
+  }
+}
+/* 2D-Umdreh-Reveal ohne 3D/Rueckseite - laeuft ueberall sauber */
+function revealCpu(card,k,cb){
+  const host=$('slot-cpu');
+  const el=host.firstElementChild;
+  if(reduced || !el){ host.innerHTML=cardHTML(card,k); cb(); return; }
+  el.style.transformOrigin='center';
+  el.animate([{transform:'scaleX(1)'},{transform:'scaleX(.04)'}],{duration:190,easing:'ease-in'})
+    .onfinish=()=>{
+      host.innerHTML=cardHTML(card,k);
+      const el2=host.firstElementChild;
+      el2.style.transformOrigin='center';
+      el2.animate([{transform:'scaleX(.04)'},{transform:'scaleX(1)'}],{duration:210,easing:'ease-out'})
+        .onfinish=cb;
+    };
+}
+
+function play(k){
+  if(busy) return; busy=true; setCats(false,me[0]);
+  const myTop=me.shift(), cpuTop=cpu.shift();
+  const label=CATFULL[k]; const mv=val(myTop,k), cv=val(cpuTop,k);
+  const bolt=document.querySelector('.bolt'); bolt.classList.add('spin'); setTimeout(()=>bolt.classList.remove('spin'),560);
+
+  $('slot-me').innerHTML=cardHTML(myTop,k);
+
+  const stake=[myTop,cpuTop,...pot]; pot=[];
+  let outcome,winner;
+  if(mv>cv){winner='me'; me.push(...stake); chooser='me'; outcome='win';}
+  else if(cv>mv){winner='cpu'; cpu.push(...stake); chooser='cpu'; outcome='lose';}
+  else{winner='tie'; pot=stake; outcome='tie';}
+
+  revealCpu(cpuTop,k,()=>{
+    const mc=$('slot-me').querySelector('.card');
+    const cc=$('slot-cpu').querySelector('.card');
+    if(outcome==='win'){mc.classList.add('win'); cc.classList.add('lose');}
+    else if(outcome==='lose'){cc.classList.add('win'); mc.classList.add('lose');}
+    const res=$('result');
+    if(outcome==='win'){res.textContent=`✔ ${label}: ${mv} vs ${cv} — du gewinnst!`; res.className='result win show';}
+    else if(outcome==='lose'){res.textContent=`✘ ${label}: ${mv} vs ${cv} — Computer gewinnt`; res.className='result lose show';}
+    else{res.textContent=`= ${label}: ${mv} vs ${cv} — Gleichstand! → Pott`; res.className='result tie show';}
+    logRound(label,myTop,cpuTop,mv,cv,outcome,stake.length);
+
+    setTimeout(()=>{
+      const mc2=$('slot-me').querySelector('.card'), cc2=$('slot-cpu').querySelector('.card');
+      if(outcome==='tie'){ burst(mc2,myTop.rarity); burst(cc2,cpuTop.rarity); }
+      else{ flyOff(mc2,myTop,winner); flyOff(cc2,cpuTop,winner); }
+      updateScores(false); busy=false;
+      if(me.length===0||cpu.length===0){ setTimeout(end,950); return; }
+      $('status').innerHTML='Runde vorbei — <b>Nächste Runde klicken!</b>';
+      $('next').style.display=''; $('next').classList.add('pulse');
+    }, 950);
+  });
+}
+function logRound(label,my,cp,mv,cv,outcome,n){
+  const cls=outcome==='win'?'w':outcome==='lose'?'l':'t';
+  const verb=outcome==='win'?'Du +'+n:outcome==='lose'?'CPU +'+n:'Pott';
+  const div=document.createElement('div'); div.className='ln';
+  div.innerHTML=`R${round} · ${label} · <b>${my.name}</b> ${mv} vs <b>${cp.name}</b> ${cv} · <span class="${cls}">${verb}</span>`;
+  $('feed').prepend(div);
+}
+$('next').onclick=()=>{ if(busy) return; $('next').classList.remove('pulse'); nextTurn(); };
+
+function end(){
+  const won=cpu.length===0&&me.length>0, lost=me.length===0&&cpu.length>0;
+  let title,sub,tag,color;
+  if(won){tag='Mission erfolgreich'; title='🏆 Gewonnen!'; sub='Du hast alle 20 Karten erobert. Sauber gespielt!'; color='var(--blue)';}
+  else if(lost){tag='Mission gescheitert'; title='💀 K.O.!'; sub='Der Computer hält alle Karten. Nächstes Mal!'; color='var(--red)';}
+  else if(me.length>cpu.length){tag='Nach Punkten'; title='🏆 Du führst!'; sub=`Du hältst ${me.length} von 20 Karten.`; color='var(--blue)';}
+  else if(cpu.length>me.length){tag='Nach Punkten'; title='💀 Computer führt'; sub=`Der Computer hält ${cpu.length} von 20 Karten.`; color='var(--red)';}
+  else{tag='Unentschieden'; title='🤝 Patt!'; sub='Gleichstand — niemand hat die Oberhand.'; color='var(--r-legend)';}
+  $('go-tag').textContent=tag; $('go-title').textContent=title; $('go-sub').textContent=sub; $('go-tag').style.color=color;
+  $('gameover').style.display='grid';
+}
+
+function buildGallery(){
+  const order=['legendaer','episch','selten','haeufig'];
+  const sorted=DECK.slice().sort((a,b)=>order.indexOf(a.rarity)-order.indexOf(b.rarity));
+  $('gal-grid').innerHTML=sorted.map(c=>cardHTML(c)).join('');
+  $('gal-count').textContent=DECK.length+' Karten · 4 Seltenheitsstufen';
+}
+function openGal(){ buildGallery(); $('gallery').style.display='grid'; }
+function openMenu(){ $('gameover').style.display='none'; $('gallery').style.display='none'; $('menu').style.display='grid'; }
+
+$('m-new').onclick=start; $('restart').onclick=start; $('go-again').onclick=start;
+$('m-cards').onclick=openGal; $('open-gal').onclick=openGal;
+$('to-menu').onclick=openMenu; $('go-menu').onclick=openMenu;
+$('gal-close').onclick=()=>{ $('gallery').style.display='none'; if(!me) $('menu').style.display='grid'; };
+$('gallery').onclick=e=>{ if(e.target.id==='gallery'){ $('gallery').style.display='none'; if(!me) $('menu').style.display='grid'; } };
+</script>
