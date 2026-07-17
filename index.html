@@ -1,4 +1,4 @@
-<title>IT-Security-TCG</title>
+<title>Break Point — IT-Security Kartenspiel</title>
 <style>
   :root{
     --paper:#f6eccf; --paper2:#fbf5e2; --ink:#161210;
@@ -14,7 +14,7 @@
   html,body{margin:0;height:100%}
   body{
     font-family:var(--body); color:var(--ink); font-weight:600; min-height:100%;
-    -webkit-font-smoothing:antialiased;
+    -webkit-font-smoothing:antialiased; overflow-x:hidden;
     background:
       radial-gradient(circle at 20% 12%, rgba(46,127,228,.10), transparent 30%),
       radial-gradient(circle at 82% 8%, rgba(236,47,47,.10), transparent 32%),
@@ -26,87 +26,83 @@
     background-size:15px 15px; opacity:.5;
     mask-image:radial-gradient(90% 85% at 50% 30%,#000 40%,transparent 92%);
   }
+  /* schwebende Comic-Deko im Hintergrund */
+  #ambient{position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden}
+  #ambient .float{position:absolute; font-family:var(--comic); opacity:.16; will-change:transform;
+    animation:drift linear infinite; user-select:none}
+  @keyframes drift{
+    0%{transform:translateY(20px) rotate(-8deg)}
+    50%{transform:translateY(-24px) rotate(8deg)}
+    100%{transform:translateY(20px) rotate(-8deg)}}
   .wrap{position:relative; z-index:1; max-width:1060px; margin:0 auto; padding:20px 18px 60px}
-
   .comic{font-family:var(--comic); font-weight:400; letter-spacing:.02em}
 
   /* top bar */
-  .topbar{
-    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
-    border:4px solid var(--ink); background:var(--yellow); border-radius:16px; padding:11px 16px; margin-bottom:18px;
-    box-shadow:var(--sh);
-  }
+  .topbar{display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    border:4px solid var(--ink); background:var(--yellow); border-radius:16px; padding:11px 16px; margin-bottom:18px; box-shadow:var(--sh)}
   .logo{display:flex; align-items:center; gap:12px}
-  .mark{
-    width:40px;height:40px;border-radius:10px;flex:none; border:3px solid var(--ink);
+  .mark{width:40px;height:40px;border-radius:10px;flex:none; border:3px solid var(--ink);
     background:var(--red); color:#fff; display:grid;place-items:center; font-family:var(--comic); font-size:20px;
-    box-shadow:2px 2px 0 var(--ink); transform:rotate(-6deg);
-  }
+    box-shadow:2px 2px 0 var(--ink); transform:rotate(-6deg); animation:markWobble 3.5s ease-in-out infinite}
+  @keyframes markWobble{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg) scale(1.06)}}
   .title-h{font-family:var(--comic); font-size:26px; line-height:1; text-transform:uppercase; letter-spacing:.02em; -webkit-text-stroke:1px var(--ink)}
   .title-h b{color:var(--red)}
-  .sub{font-family:var(--comic); font-size:12px; color:var(--ink); letter-spacing:.18em; text-transform:uppercase; opacity:.7}
+  .title-h .tw{display:inline-block; animation:hdrBob 2.8s ease-in-out infinite}
+  .title-h .tw:last-child{animation-delay:.5s}
+  @keyframes hdrBob{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-3px) rotate(1.5deg)}}
+  .sub{font-family:var(--comic); font-size:12px; color:var(--ink); letter-spacing:.16em; text-transform:uppercase; opacity:.7}
   .scores{margin-left:auto; display:flex; gap:9px; flex-wrap:wrap}
-  .chip{
-    border:3px solid var(--ink); border-radius:999px; padding:5px 13px; background:#fff;
-    display:flex; gap:8px; align-items:center; box-shadow:2px 2px 0 var(--ink);
-  }
+  .chip{border:3px solid var(--ink); border-radius:999px; padding:5px 13px; background:#fff;
+    display:flex; gap:8px; align-items:center; box-shadow:2px 2px 0 var(--ink)}
   .chip .lbl{font-family:var(--comic); text-transform:uppercase; font-size:12px; letter-spacing:.06em; color:var(--muted)}
   .chip .num{font-family:var(--comic); font-size:19px; line-height:1; font-variant-numeric:tabular-nums; transition:transform .25s ease; min-width:14px; text-align:center}
   .chip .num.bump{transform:scale(1.7) rotate(-6deg); color:var(--red)}
   .chip.me{background:#dff0ff} .chip.me .num{color:var(--blue)}
   .chip.pot{background:#fff2cf} .chip.pot .num{color:var(--red-d)}
 
-  /* status = speech bubble */
   .status-wrap{display:flex; justify-content:center; margin:6px 0 18px}
-  .status{
-    position:relative; background:#fff; border:3px solid var(--ink); border-radius:16px;
-    padding:9px 20px; font-family:var(--comic); font-size:17px; letter-spacing:.02em; text-align:center;
-    box-shadow:var(--sh); max-width:90%;
-  }
+  .status{position:relative; background:#fff; border:3px solid var(--ink); border-radius:16px;
+    padding:9px 20px; font-family:var(--comic); font-size:17px; letter-spacing:.02em; text-align:center; box-shadow:var(--sh); max-width:90%}
   .status::after{content:""; position:absolute; left:34px; bottom:-14px; width:20px; height:20px; background:#fff;
     border-right:3px solid var(--ink); border-bottom:3px solid var(--ink); transform:rotate(45deg)}
   .status b{color:var(--red)}
 
   .board{display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:14px}
   .vs{display:flex; flex-direction:column; align-items:center; gap:6px}
-  .vs .bolt{
-    width:56px;height:56px; display:grid;place-items:center; font-family:var(--comic); font-size:15px; color:#fff;
-    background:var(--red); clip-path:polygon(50% 0,63% 22%,90% 15%,78% 40%,100% 50%,78% 60%,90% 85%,63% 78%,50% 100%,37% 78%,10% 85%,22% 60%,0 50%,22% 40%,10% 15%,37% 22%);
-    text-shadow:1px 1px 0 var(--ink);
-  }
+  .vs .bolt{width:56px;height:56px; display:grid;place-items:center; font-family:var(--comic); font-size:15px; color:#fff;
+    background:var(--red); animation:boltIdle 2.4s ease-in-out infinite;
+    clip-path:polygon(50% 0,63% 22%,90% 15%,78% 40%,100% 50%,78% 60%,90% 85%,63% 78%,50% 100%,37% 78%,10% 85%,22% 60%,0 50%,22% 40%,10% 15%,37% 22%);
+    text-shadow:1px 1px 0 var(--ink)}
+  @keyframes boltIdle{0%,100%{transform:rotate(-5deg) scale(1)}50%{transform:rotate(5deg) scale(1.08)}}
   .vs .bolt.spin{animation:boltSpin .55s cubic-bezier(.3,1.4,.4,1)}
   @keyframes boltSpin{50%{transform:rotate(160deg) scale(1.35)}100%{transform:rotate(360deg)}}
   .vs .lbl{font-family:var(--comic); font-size:15px; letter-spacing:.1em; color:var(--muted)}
-  .side-label{
-    display:inline-block; font-family:var(--comic); text-transform:uppercase; letter-spacing:.06em; font-size:14px;
-    background:var(--ink); color:#fff; padding:3px 12px; border-radius:8px; margin-bottom:10px; transform:rotate(-1.5deg);
-  }
+  .side-label{display:inline-block; font-family:var(--comic); text-transform:uppercase; letter-spacing:.06em; font-size:14px;
+    background:var(--ink); color:#fff; padding:3px 12px; border-radius:8px; margin-bottom:10px; transform:rotate(-1.5deg)}
   .side-label.me{background:var(--blue)}
   .slot{display:flex; flex-direction:column; align-items:center; min-height:378px}
+  /* leichtes Schweben der Kartenbereiche */
+  .bobwrap{width:100%; display:flex; justify-content:center; animation:bob 3.4s ease-in-out infinite}
+  #bob-cpu{animation-delay:.7s}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 
   /* card */
-  .card{
-    width:100%; max-width:300px; border-radius:16px; position:relative; overflow:hidden;
+  .card{width:100%; max-width:300px; border-radius:16px; position:relative; overflow:hidden;
     background:var(--paper2); border:4px solid var(--ink); box-shadow:6px 6px 0 var(--ink);
-    transition:box-shadow .2s ease, transform .2s ease;
-  }
-  .card::before{ /* halftone tint by rarity */
-    content:""; position:absolute; inset:0; pointer-events:none; opacity:.5;
+    transition:box-shadow .2s ease, transform .2s ease}
+  .card::before{content:""; position:absolute; inset:0; pointer-events:none; opacity:.5;
     background-image:radial-gradient(color-mix(in srgb,var(--rc) 60%,transparent) 1.6px, transparent 1.8px);
-    background-size:11px 11px;
-    mask-image:radial-gradient(120% 90% at 100% 0,#000,transparent 55%);
-  }
+    background-size:11px 11px; mask-image:radial-gradient(120% 90% at 100% 0,#000,transparent 55%)}
   .card.win{box-shadow:8px 8px 0 var(--ink), 0 0 0 5px var(--yellow); transform:translate(-2px,-4px) rotate(-1deg)}
   .card.lose{filter:grayscale(.5); opacity:.7; transform:rotate(1.5deg)}
   .card.r-legendaer{border-color:var(--r-legend)}
-  .card.r-legendaer::after,.card.r-epic-x::after{content:""}
   .topband{height:0}
   .c-head{display:flex; align-items:flex-start; justify-content:space-between; gap:8px; padding:13px 15px 4px; position:relative; z-index:1}
   .c-name{font-family:var(--comic); font-weight:400; font-size:24px; line-height:.98; text-transform:uppercase; letter-spacing:.01em; text-wrap:balance; -webkit-text-stroke:.6px var(--ink)}
   .c-type{font-family:var(--comic); font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:#fff; background:var(--ink); display:inline-block; padding:2px 8px; border-radius:6px; margin-top:6px}
   .badge{flex:none; width:52px; height:52px; display:grid; place-items:center; color:var(--ink);
     background:var(--rc); border:2px solid var(--ink); transform:rotate(8deg);
-    clip-path:polygon(50% 0,63% 22%,90% 15%,78% 40%,100% 50%,78% 60%,90% 85%,63% 78%,50% 100%,37% 78%,10% 85%,22% 60%,0 50%,22% 40%,10% 15%,37% 22%);}
+    clip-path:polygon(50% 0,63% 22%,90% 15%,78% 40%,100% 50%,78% 60%,90% 85%,63% 78%,50% 100%,37% 78%,10% 85%,22% 60%,0 50%,22% 40%,10% 15%,37% 22%)}
   .badge span{font-family:var(--comic); font-size:11px; line-height:.9; text-align:center; letter-spacing:-1px; text-shadow:0 1px 0 rgba(255,255,255,.5)}
   .rar{position:relative; z-index:1; font-family:var(--comic); font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--rc); text-align:left; padding:2px 15px 4px; -webkit-text-stroke:.4px var(--ink)}
   .stats{position:relative; z-index:1; padding:6px 15px 4px; display:flex; flex-direction:column; gap:7px}
@@ -125,7 +121,9 @@
     background:repeating-linear-gradient(45deg,#efe6c8 0 14px,#e7dcbb 14px 28px)}
   .back-inner{display:flex; flex-direction:column; align-items:center; gap:12px; font-family:var(--comic)}
   .back-glyph{width:80px;height:80px; display:grid;place-items:center; font-size:38px; color:#fff; background:var(--ink);
-    clip-path:polygon(50% 0,63% 22%,90% 15%,78% 40%,100% 50%,78% 60%,90% 85%,63% 78%,50% 100%,37% 78%,10% 85%,22% 60%,0 50%,22% 40%,10% 15%,37% 22%);}
+    animation:backSpin 5s ease-in-out infinite;
+    clip-path:polygon(50% 0,63% 22%,90% 15%,78% 40%,100% 50%,78% 60%,90% 85%,63% 78%,50% 100%,37% 78%,10% 85%,22% 60%,0 50%,22% 40%,10% 15%,37% 22%)}
+  @keyframes backSpin{0%,100%{transform:rotate(0)}50%{transform:rotate(20deg) scale(1.05)}}
   .back-txt{font-size:15px; letter-spacing:.16em; text-transform:uppercase; background:var(--red); color:#fff; padding:3px 12px; border:2px solid var(--ink); transform:rotate(-3deg)}
 
   .flip{perspective:1300px; width:100%; max-width:300px}
@@ -136,19 +134,16 @@
   .flip.revealed .front{position:relative}
   .flip.revealed .back{position:absolute; inset:0}
 
-  /* controls */
   .controls{margin-top:22px; display:flex; flex-direction:column; align-items:center; gap:14px}
   .result{font-family:var(--comic); text-align:center; font-size:20px; letter-spacing:.02em; min-height:26px; text-transform:uppercase; -webkit-text-stroke:.5px var(--ink)}
   .result.win{color:var(--blue)} .result.lose{color:var(--red)} .result.tie{color:var(--r-legend)}
   .result.show{animation:popIn .45s cubic-bezier(.2,1.7,.4,1)}
   @keyframes popIn{from{opacity:0; transform:scale(.5) rotate(-6deg)}to{opacity:1; transform:none}}
   .cats{display:flex; gap:11px; flex-wrap:wrap; justify-content:center}
-  .cat{
-    font-family:var(--comic); font-size:15px; letter-spacing:.03em; text-transform:uppercase; color:var(--ink);
+  .cat{font-family:var(--comic); font-size:15px; letter-spacing:.03em; text-transform:uppercase; color:var(--ink);
     background:#fff; border:3px solid var(--ink); border-radius:12px; padding:9px 15px; cursor:pointer;
     display:flex; flex-direction:column; align-items:center; gap:2px; min-width:108px; box-shadow:var(--sh);
-    transition:transform .12s ease, box-shadow .12s ease, background .12s ease;
-  }
+    transition:transform .12s ease, box-shadow .12s ease, background .12s ease}
   .cat .cv{font-size:22px; color:var(--red); -webkit-text-stroke:.5px var(--ink)}
   .cat:hover:not(:disabled){transform:translate(-2px,-2px); box-shadow:6px 6px 0 var(--ink); background:var(--yellow)}
   .cat:active:not(:disabled){transform:translate(2px,2px); box-shadow:1px 1px 0 var(--ink)}
@@ -156,11 +151,9 @@
   .cat:disabled{opacity:.45; cursor:default; box-shadow:2px 2px 0 var(--ink)}
   .hint{font-family:var(--comic); font-size:14px; color:var(--muted); letter-spacing:.03em; min-height:18px; text-transform:uppercase}
 
-  .btn{
-    font-family:var(--comic); font-size:19px; letter-spacing:.04em; text-transform:uppercase; cursor:pointer;
+  .btn{font-family:var(--comic); font-size:19px; letter-spacing:.04em; text-transform:uppercase; cursor:pointer;
     border-radius:14px; padding:12px 30px; border:3px solid var(--ink); background:var(--red); color:#fff;
-    box-shadow:var(--sh); transition:transform .12s ease, box-shadow .12s ease; text-shadow:1.5px 1.5px 0 var(--red-d);
-  }
+    box-shadow:var(--sh); transition:transform .12s ease, box-shadow .12s ease; text-shadow:1.5px 1.5px 0 var(--red-d)}
   .btn:hover{transform:translate(-2px,-2px); box-shadow:6px 6px 0 var(--ink)}
   .btn:active{transform:translate(2px,2px); box-shadow:1px 1px 0 var(--ink)}
   .btn:focus-visible{outline:3px solid var(--blue); outline-offset:3px}
@@ -169,6 +162,7 @@
   @keyframes btnPulse{0%,100%{transform:rotate(-1deg) scale(1)}50%{transform:rotate(1deg) scale(1.05)}}
   .btn.ghost{background:#fff; color:var(--ink); text-shadow:none}
   .btn.ghost:hover{background:var(--yellow)}
+  .btn.blue{background:var(--blue); text-shadow:1.5px 1.5px 0 #1a5cb0}
 
   details.log{margin-top:26px; border:3px solid var(--ink); border-radius:14px; background:#fff; overflow:hidden; box-shadow:var(--sh)}
   details.log summary{font-family:var(--comic); font-size:15px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink); padding:11px 16px; cursor:pointer; list-style:none; background:var(--yellow)}
@@ -181,8 +175,7 @@
 
   .footer{text-align:center; margin-top:24px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap}
 
-  /* overlays */
-  .overlay{position:fixed; inset:0; z-index:40; display:grid; place-items:center; padding:22px; background:rgba(22,18,16,.45); backdrop-filter:blur(3px); animation:fade .25s ease}
+  .overlay{position:fixed; inset:0; z-index:40; display:grid; place-items:center; padding:22px; background:rgba(22,18,16,.5); backdrop-filter:blur(3px); animation:fade .25s ease}
   @keyframes fade{from{opacity:0}to{opacity:1}}
   .modal{width:min(560px,100%); border:4px solid var(--ink); border-radius:20px; padding:28px; background:var(--paper2); box-shadow:10px 10px 0 var(--ink); animation:rise .4s cubic-bezier(.2,1.3,.35,1)}
   @keyframes rise{from{opacity:0; transform:translateY(26px) scale(.95) rotate(-1deg)}to{opacity:1; transform:none}}
@@ -190,25 +183,34 @@
   .modal h1 b{color:var(--red)}
   .modal .tag{font-family:var(--comic); font-size:14px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-bottom:18px}
   .modal p{font-size:14px; line-height:1.6; color:var(--ink); font-weight:600}
-  .rules{list-style:none; padding:0; margin:16px 0 22px; display:flex; flex-direction:column; gap:10px}
+  .rules{list-style:none; padding:0; margin:14px 0 6px; display:flex; flex-direction:column; gap:10px}
   .rules li{display:flex; gap:12px; font-size:13.5px; line-height:1.45; align-items:flex-start; font-weight:600}
   .rules .n{font-family:var(--comic); font-size:20px; color:#fff; background:var(--red); width:28px; height:28px; border:2px solid var(--ink); border-radius:8px; display:grid; place-items:center; flex:none}
   .modal .actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:6px}
+  details.rulebox{margin-top:14px; border:3px solid var(--ink); border-radius:12px; overflow:hidden; text-align:left}
+  details.rulebox summary{font-family:var(--comic); font-size:15px; text-transform:uppercase; letter-spacing:.06em; padding:9px 14px; cursor:pointer; list-style:none; background:var(--yellow)}
+  details.rulebox summary::-webkit-details-marker{display:none}
+  details.rulebox .inner{padding:6px 16px 14px}
   .big-result{font-family:var(--comic); font-size:16px; letter-spacing:.16em; text-transform:uppercase; margin-bottom:6px}
   .gal-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:18px; margin-top:6px; max-height:70vh; overflow-y:auto; padding:8px}
   .gal-modal{width:min(1000px,100%)}
 
-  /* FX */
-  #fx{position:fixed; inset:0; pointer-events:none; z-index:60; overflow:hidden}
-  .cstar{position:fixed; will-change:transform,opacity;
-    clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)}
-  .boomwrap{position:fixed; will-change:transform,opacity; display:grid; place-items:center}
-  .boomwrap .layer{grid-area:1/1}
-  .boomword{grid-area:1/1; font-family:var(--comic); color:#fff; text-transform:uppercase; -webkit-text-stroke:2px var(--ink); text-shadow:3px 3px 0 var(--ink); z-index:2; line-height:.9; text-align:center}
-  #flash{position:fixed; inset:0; z-index:55; pointer-events:none; opacity:0;
-    background:radial-gradient(circle at var(--fx,50%) var(--fy,50%), rgba(255,220,120,.9), transparent 60%)}
-  #lines{position:fixed; inset:0; z-index:54; pointer-events:none; opacity:0;
-    background:repeating-conic-gradient(from 0deg at var(--fx,50%) var(--fy,50%), rgba(22,18,16,.16) 0deg 3deg, transparent 3deg 9deg)}
+  /* MENU (Landing) */
+  #menu .modal{width:min(640px,100%); text-align:center; position:relative; overflow:hidden}
+  .menu-burst{position:absolute; width:230px; height:230px; top:-70px; right:-70px; background:var(--yellow); opacity:.5;
+    clip-path:polygon(50% 0,60% 30%,92% 18%,74% 44%,100% 56%,72% 62%,88% 92%,56% 72%,50% 100%,44% 74%,14% 92%,30% 62%,0 56%,28% 44%,10% 18%,40% 30%);
+    animation:menuBurst 8s linear infinite}
+  @keyframes menuBurst{to{transform:rotate(360deg)}}
+  .menu-title{position:relative; z-index:1; display:flex; gap:.14em; justify-content:center; flex-wrap:wrap; margin:6px 0 2px}
+  .menu-title .w{font-family:var(--comic); font-weight:400; font-size:clamp(46px,13vw,90px); line-height:.9; text-transform:uppercase;
+    color:#fff; -webkit-text-stroke:2.5px var(--ink); text-shadow:6px 6px 0 var(--ink); display:inline-block}
+  .menu-title .w1{color:var(--yellow); animation:titleFloatA 3s ease-in-out infinite}
+  .menu-title .w2{color:var(--red); animation:titleFloatB 3s ease-in-out infinite .5s}
+  @keyframes titleFloatA{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-12px) rotate(2deg)}}
+  @keyframes titleFloatB{0%,100%{transform:translateY(-4px) rotate(3deg)}50%{transform:translateY(10px) rotate(-2deg)}}
+  .menu-sub{position:relative; z-index:1; font-family:var(--comic); font-size:15px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin:8px 0 22px}
+  .menu-actions{position:relative; z-index:1; display:flex; flex-direction:column; gap:12px; align-items:center}
+  .menu-actions .btn{width:min(320px,100%)}
 
   @media (max-width:720px){
     .board{grid-template-columns:1fr; gap:6px}
@@ -218,16 +220,19 @@
     .title-h{font-size:22px}
   }
   @media (prefers-reduced-motion:reduce){
-    *{animation-duration:.001s !important}
+    *{animation-duration:.001s !important; animation-iteration-count:1 !important}
     .flip-in{transition:none !important}
+    #ambient{display:none}
   }
 </style>
+
+<div id="ambient"></div>
 
 <div class="wrap">
   <div class="topbar">
     <div class="logo">
-      <div class="mark">//</div>
-      <div><div class="title-h"><b>IT-Security</b>-TCG</div><div class="sub">Threat Quartett</div></div>
+      <div class="mark">BP</div>
+      <div><div class="title-h"><span class="tw"><b>Break</b></span> <span class="tw">Point</span></div><div class="sub">IT-Security Kartenduell</div></div>
     </div>
     <div class="scores">
       <div class="chip me"><span class="lbl">Du</span><span class="num" id="s-me">0</span></div>
@@ -240,9 +245,9 @@
   <div class="status-wrap"><div class="status" id="status">Bereitmachen…</div></div>
 
   <div class="board">
-    <div class="slot"><div class="side-label me">Deine Karte</div><div id="slot-me"></div></div>
+    <div class="slot"><div class="side-label me">Deine Karte</div><div class="bobwrap" id="bob-me"><div id="slot-me"></div></div></div>
     <div class="vs"><div class="bolt comic">VS</div><span class="lbl">DUELL</span></div>
-    <div class="slot"><div class="side-label">Gegner</div><div class="flip" id="slot-cpu"></div></div>
+    <div class="slot"><div class="side-label">Gegner</div><div class="bobwrap" id="bob-cpu"><div class="flip" id="slot-cpu"></div></div></div>
   </div>
 
   <div class="controls">
@@ -255,45 +260,66 @@
   <details class="log"><summary>Kampf-Protokoll</summary><div class="feed" id="feed"></div></details>
 
   <div class="footer">
-    <button class="btn ghost" id="open-gal">Alle Karten</button>
+    <button class="btn ghost" id="open-gal">Karten-Info</button>
     <button class="btn ghost" id="restart">Neues Spiel</button>
+    <button class="btn ghost" id="to-menu">☰ Menü</button>
   </div>
 </div>
 
-<div id="fx"></div><div id="flash"></div><div id="lines"></div>
-
-<div class="overlay" id="intro">
+<!-- MENU -->
+<div class="overlay" id="menu">
   <div class="modal">
-    <h1><b>IT-Security</b>-TCG</h1>
-    <div class="tag">Das Sammelkartenspiel rund um IT-Angriffe</div>
-    <p>20 reale Angriffsvektoren — von Virus bis Zero-Day — treten im Quartett gegeneinander an. Erobere alle Karten!</p>
-    <ul class="rules">
-      <li><span class="n">1</span><span>Das Deck wird gemischt und je zur Hälfte an dich und den Computer verteilt.</span></li>
-      <li><span class="n">2</span><span>Wer am Zug ist, wählt einen von vier Werten: <b>Schaden, Verbreitung, Tarnung, Komplexität</b>.</span></li>
-      <li><span class="n">3</span><span>Der höhere Wert gewinnt beide Karten. Gleichstand → Pott, der beim nächsten Sieg dazukommt.</span></li>
-      <li><span class="n">4</span><span>Nach jeder Runde klickst du selbst auf <b>Nächste Runde</b>. Wer alle Karten hält, gewinnt!</span></li>
-    </ul>
-    <div class="actions">
-      <button class="btn" id="start">▸ Los geht's</button>
-      <button class="btn ghost" id="intro-gal">Karten ansehen</button>
+    <div class="menu-burst"></div>
+    <div class="menu-title"><span class="w w1">Break</span><span class="w w2">Point</span></div>
+    <div class="menu-sub">IT-Security Kartenspiel</div>
+    <div class="menu-actions">
+      <button class="btn big" id="m-new">▸ Neues Spiel</button>
+      <button class="btn big blue" id="m-cards">🃏 Karten-Info</button>
+      <details class="rulebox">
+        <summary>Spielregeln</summary>
+        <div class="inner">
+          <ul class="rules">
+            <li><span class="n">1</span><span>Das Deck wird gemischt und je zur Hälfte an dich und den Computer verteilt.</span></li>
+            <li><span class="n">2</span><span>Wer am Zug ist, wählt einen von vier Werten: <b>Schaden, Verbreitung, Tarnung, Komplexität</b>.</span></li>
+            <li><span class="n">3</span><span>Der höhere Wert gewinnt beide Karten. Gleichstand → Pott, der beim nächsten Sieg dazukommt.</span></li>
+            <li><span class="n">4</span><span>Nach jeder Runde klickst du auf <b>Nächste Runde</b>. Wer alle Karten hält, gewinnt!</span></li>
+          </ul>
+        </div>
+      </details>
     </div>
   </div>
 </div>
 
+<!-- gameover -->
 <div class="overlay" id="gameover" style="display:none">
   <div class="modal" style="text-align:center">
     <div class="big-result" id="go-tag"></div><h1 id="go-title"></h1><p id="go-sub"></p>
-    <div class="actions" style="justify-content:center;margin-top:18px"><button class="btn big" id="go-again">▸ Nochmal!</button></div>
+    <div class="actions" style="justify-content:center;margin-top:18px">
+      <button class="btn big" id="go-again">▸ Nochmal!</button>
+      <button class="btn ghost" id="go-menu">☰ Menü</button>
+    </div>
   </div>
 </div>
 
+<!-- gallery -->
 <div class="overlay" id="gallery" style="display:none">
   <div class="modal gal-modal">
-    <h1><b>Karten</b>sammlung</h1><div class="tag" id="gal-count"></div>
+    <h1><b>Karten</b>-Info</h1><div class="tag" id="gal-count"></div>
     <div class="gal-grid" id="gal-grid"></div>
     <div class="actions" style="margin-top:18px"><button class="btn ghost" id="gal-close">Schließen</button></div>
   </div>
 </div>
+
+<div id="fx"></div><div id="flash"></div><div id="lines"></div>
+<style>
+  #fx{position:fixed; inset:0; pointer-events:none; z-index:60; overflow:hidden}
+  .cstar{position:fixed; will-change:transform,opacity; clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)}
+  .boomwrap{position:fixed; will-change:transform,opacity; display:grid; place-items:center}
+  .boomwrap .layer{grid-area:1/1}
+  .boomword{grid-area:1/1; font-family:var(--comic); color:#fff; text-transform:uppercase; -webkit-text-stroke:2px var(--ink); text-shadow:3px 3px 0 var(--ink); z-index:2; line-height:.9; text-align:center}
+  #flash{position:fixed; inset:0; z-index:55; pointer-events:none; opacity:0; background:radial-gradient(circle at var(--fx,50%) var(--fy,50%), rgba(255,220,120,.9), transparent 60%)}
+  #lines{position:fixed; inset:0; z-index:54; pointer-events:none; opacity:0; background:repeating-conic-gradient(from 0deg at var(--fx,50%) var(--fy,50%), rgba(22,18,16,.16) 0deg 3deg, transparent 3deg 9deg)}
+</style>
 
 <script>
 const RAR={
@@ -302,7 +328,6 @@ const RAR={
   selten:{label:"Selten",stars:2,color:"var(--r-rare)",tier:2,word:"ZAP!",cols:["#7db4ff","#2e7fe4","#b9d7ff"]},
   haeufig:{label:"Häufig",stars:1,color:"var(--r-common)",tier:1,word:"POP!",cols:["#b3bccb","#8a94a6","#d3dae4"]},
 };
-const CATS=[["schaden","Schaden"],["verbreitung","Verbreitung"],["tarnung","Tarnung"],["komplexitaet","Komplex."]];
 const CATFULL={schaden:"Schaden",verbreitung:"Verbreitung",tarnung:"Tarnung",komplexitaet:"Komplexität"};
 
 const DECK=[
@@ -332,7 +357,23 @@ const val=(c,k)=>c[k];
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
 const $=id=>document.getElementById(id);
 const reduced=matchMedia("(prefers-reduced-motion:reduce)").matches;
-const STAR="polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)";
+
+/* schwebende Deko erzeugen */
+(function ambient(){
+  if(reduced) return;
+  const items=["🦠","🔒","⚡","💾","👾","★","01","</>","🛡","💥","🐛","☠"];
+  const host=$('ambient');
+  for(let i=0;i<14;i++){
+    const el=document.createElement('div'); el.className='float';
+    el.textContent=items[i%items.length];
+    el.style.left=Math.random()*96+'vw';
+    el.style.top=Math.random()*92+'vh';
+    el.style.fontSize=(22+Math.random()*40)+'px';
+    el.style.animationDuration=(7+Math.random()*8)+'s';
+    el.style.animationDelay=(-Math.random()*8)+'s';
+    host.appendChild(el);
+  }
+})();
 
 function cardHTML(c,highlight){
   const r=RAR[c.rarity];
@@ -348,7 +389,7 @@ function cardHTML(c,highlight){
 }
 const backHTML=`<div class="card back"><div class="back-inner"><div class="back-glyph">?</div><div class="back-txt">Top Secret</div></div></div>`;
 
-/* ---------- comic burst ---------- */
+/* comic burst */
 function jaggedPoly(spikes,rIn,rOut){
   let pts=[]; const n=spikes*2;
   for(let i=0;i<n;i++){const a=(i/n)*Math.PI*2-Math.PI/2; const rad=(i%2? rIn:rOut);
@@ -359,16 +400,13 @@ function burst(el, rarity){
   if(!el || reduced) return;
   const rect=el.getBoundingClientRect(); const cx=rect.left+rect.width/2, cy=rect.top+rect.height/2;
   const r=RAR[rarity]; const tier=r.tier; const cols=r.cols; const fx=$('fx');
-
-  // big comic word explosion
   const wrap=document.createElement('div'); wrap.className='boomwrap';
   const size=[0,86,120,160,210][tier];
   wrap.style.left=cx+'px'; wrap.style.top=cy+'px'; wrap.style.width=size+'px'; wrap.style.height=size+'px';
   const outline=document.createElement('div'); outline.className='layer';
   outline.style.cssText=`width:${size}px;height:${size}px;background:var(--ink);clip-path:${jaggedPoly(11+tier,26,50)}`;
   const inner=document.createElement('div'); inner.className='layer';
-  const ic=cols[0];
-  inner.style.cssText=`width:${size*0.9}px;height:${size*0.9}px;justify-self:center;align-self:center;background:${ic};clip-path:${jaggedPoly(11+tier,26,50)}`;
+  inner.style.cssText=`width:${size*0.9}px;height:${size*0.9}px;justify-self:center;align-self:center;background:${cols[0]};clip-path:${jaggedPoly(11+tier,26,50)}`;
   const word=document.createElement('div'); word.className='boomword';
   word.style.fontSize=[0,20,26,32,40][tier]+'px'; word.textContent=r.word;
   wrap.appendChild(outline); wrap.appendChild(inner); wrap.appendChild(word); fx.appendChild(wrap);
@@ -377,9 +415,8 @@ function burst(el, rarity){
     {transform:`translate(-50%,-50%) scale(1.12) rotate(${tier>=3?'6deg':'-3deg'})`,opacity:1,offset:.32},
     {transform:'translate(-50%,-50%) scale(1) rotate(0)',opacity:1,offset:.7},
     {transform:'translate(-50%,-50%) scale(1.25) rotate(4deg)',opacity:0,offset:1}
-  ],{duration:reduced?200:600+tier*130,easing:'cubic-bezier(.2,1.2,.35,1)'}).onfinish=()=>wrap.remove();
+  ],{duration:600+tier*130,easing:'cubic-bezier(.2,1.2,.35,1)'}).onfinish=()=>wrap.remove();
 
-  // flying comic stars
   const counts=[0,10,16,24,36][tier];
   for(let i=0;i<counts;i++){
     const s=document.createElement('div'); s.className='cstar';
@@ -393,7 +430,6 @@ function burst(el, rarity){
       {transform:`translate(calc(-50% + ${dx}px),calc(-50% + ${dy+dist*0.35}px)) scale(.2) rotate(${(Math.random()*2-1)*540}deg)`,opacity:0}
     ],{duration:700+Math.random()*(360+tier*150),easing:'cubic-bezier(.2,.7,.3,1)'}).onfinish=()=>s.remove();
   }
-
   if(tier===4){
     const flash=$('flash'), lines=$('lines');
     [flash,lines].forEach(l=>{l.style.setProperty('--fx',cx+'px'); l.style.setProperty('--fy',cy+'px');});
@@ -404,7 +440,6 @@ function burst(el, rarity){
        {transform:'translate(-4px,-4px)'},{transform:'translate(0,0)'}],{duration:400,easing:'ease-out'});
   }
 }
-
 function flyOff(el, card, toWinner){
   if(!el) return; const dir=toWinner==='me'?1:-1;
   burst(el, card.rarity);
@@ -414,8 +449,6 @@ function flyOff(el, card, toWinner){
     {transform:`translate(${Math.random()*50-25}px,${dir*280}px) scale(.3) rotate(${dir*26}deg)`,opacity:0,offset:1}
   ],{duration:reduced?200:840,easing:'cubic-bezier(.4,.05,.3,1)',fill:'forwards'});
 }
-
-/* deal-in: Karten kommen fliegend rein */
 function dealIn(el, dir, delay){
   if(!el) return;
   el.animate([
@@ -433,7 +466,7 @@ function start(){
   const d=shuffle(DECK.slice()); me=d.slice(0,10); cpu=d.slice(10);
   pot=[]; chooser='me'; round=0; busy=false;
   $('feed').innerHTML=''; $('result').textContent=''; $('result').className='result';
-  $('gameover').style.display='none'; $('intro').style.display='none';
+  $('gameover').style.display='none'; $('menu').style.display='none'; $('gallery').style.display='none';
   updateScores(true); nextTurn();
 }
 function updateScores(silent){
@@ -441,6 +474,7 @@ function updateScores(silent){
   set('s-me',me.length); set('s-cpu',cpu.length); set('s-pot',pot.length); $('s-round').textContent=round;
 }
 function setCats(enabled,top){
+  const CATS=[["schaden","Schaden"],["verbreitung","Verbreitung"],["tarnung","Tarnung"],["komplexitaet","Komplex."]];
   $('cats').innerHTML=CATS.map(([k,label])=>`<button class="cat" data-k="${k}" ${enabled?'':'disabled'}>
      <span>${label}</span><span class="cv">${enabled?val(top,k):'–'}</span></button>`).join('');
   if(enabled) $('cats').querySelectorAll('.cat').forEach(b=>b.onclick=()=>play(b.dataset.k));
@@ -529,9 +563,11 @@ function buildGallery(){
   $('gal-count').textContent=DECK.length+' Karten · 4 Seltenheitsstufen';
 }
 function openGal(){ buildGallery(); $('gallery').style.display='grid'; }
+function openMenu(){ $('gameover').style.display='none'; $('gallery').style.display='none'; $('menu').style.display='grid'; }
 
-$('start').onclick=start; $('restart').onclick=start; $('go-again').onclick=start;
-$('open-gal').onclick=openGal; $('intro-gal').onclick=openGal;
-$('gal-close').onclick=()=>$('gallery').style.display='none';
-$('gallery').onclick=e=>{ if(e.target.id==='gallery') $('gallery').style.display='none'; };
+$('m-new').onclick=start; $('restart').onclick=start; $('go-again').onclick=start;
+$('m-cards').onclick=openGal; $('open-gal').onclick=openGal;
+$('to-menu').onclick=openMenu; $('go-menu').onclick=openMenu;
+$('gal-close').onclick=()=>{ $('gallery').style.display='none'; if(!me) $('menu').style.display='grid'; };
+$('gallery').onclick=e=>{ if(e.target.id==='gallery'){ $('gallery').style.display='none'; if(!me) $('menu').style.display='grid'; } };
 </script>
